@@ -112,16 +112,9 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
+    
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {userLocation && (
-          <View style={[styles.locationBanner, { backgroundColor: colors.primary + "20" }]}>
-            <MapPin width={16} height={16} stroke={colors.primary} />
-            <Text style={[styles.locationText, { color: colors.primary }]}>
-              Using your current location: {userLocation}
-            </Text>
-          </View>
-        )}
+        
 
         <SearchBar onSearch={handleSearch} onScanQR={handleScanQR} />
 
