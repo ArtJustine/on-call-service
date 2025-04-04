@@ -1,13 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Settings, CreditCard, Bell, Shield, HelpCircle, LogOut } from 'react-native-feather';
-import { useRouter } from 'expo-router';
-import { useTheme } from '../../context/ThemeContext';
+"use client"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { ChevronRight, Settings, CreditCard, Bell, Shield, HelpCircle, LogOut } from "react-native-feather"
+import { useRouter } from "expo-router"
+import { useTheme } from "../../context/ThemeContext"
 
 export default function AccountScreen() {
-  const router = useRouter();
-  const { colors } = useTheme();
+  const router = useRouter()
+  const { colors } = useTheme()
 
   const menuItems = [
     { icon: Settings, title: "Settings", onPress: () => router.push("/settings") },
@@ -15,18 +15,27 @@ export default function AccountScreen() {
     { icon: Bell, title: "Notifications", onPress: () => router.push("/notifications") },
     { icon: Shield, title: "Privacy & Security", onPress: () => alert("Privacy & Security pressed") },
     { icon: HelpCircle, title: "Help & Support", onPress: () => alert("Help & Support pressed") },
-  ];
+  ]
 
   const handleEditProfile = () => {
-    router.push("/edit-profile");
-  };
+    router.push("/edit-profile")
+  }
 
   const handleLogout = () => {
-    alert("Logout pressed");
-  };
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        onPress: () => router.push("/welcome"),
+      },
+    ])
+  }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Account</Text>
       </View>
@@ -45,17 +54,19 @@ export default function AccountScreen() {
           </View>
         </View>
 
-        <View style={[
-          styles.menuSection, 
-          { 
-            borderTopColor: colors.border,
-            borderBottomColor: colors.border 
-          }
-        ]}>
+        <View
+          style={[
+            styles.menuSection,
+            {
+              borderTopColor: colors.border,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
           {menuItems.map((item, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={[styles.menuItem, { borderBottomColor: colors.border }]} 
+            <TouchableOpacity
+              key={index}
+              style={[styles.menuItem, { borderBottomColor: colors.border }]}
               onPress={item.onPress}
             >
               <View style={styles.menuItemLeft}>
@@ -73,7 +84,7 @@ export default function AccountScreen() {
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -83,17 +94,17 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   content: {
     flex: 1,
   },
   profileSection: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
     borderBottomWidth: 1,
   },
@@ -107,11 +118,11 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   profileName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   profileEmail: {
@@ -119,10 +130,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   editProfileButton: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   editProfileText: {
-    fontWeight: '500',
+    fontWeight: "500",
   },
   menuSection: {
     marginTop: 16,
@@ -130,25 +141,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
   },
   menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   menuItemText: {
     marginLeft: 12,
     fontSize: 16,
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 24,
     marginBottom: 24,
     padding: 16,
@@ -156,6 +167,7 @@ const styles = StyleSheet.create({
   logoutText: {
     marginLeft: 8,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
-});
+})
+

@@ -14,7 +14,7 @@ export default function ExpertCard({ expert }: ExpertCardProps) {
   const { colors } = useTheme()
 
   const handleContact = () => {
-    alert(`Contact ${expert.name} at ${expert.contactNumber}`)
+    router.push(`/book-service/${expert.id}`)
   }
 
   const handleCardPress = () => {
@@ -68,7 +68,7 @@ export default function ExpertCard({ expert }: ExpertCardProps) {
       </Text>
 
       <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.secondary }]} onPress={handleContact}>
-        <Text style={[styles.contactButtonText, { color: colors.background }]}>Contact</Text>
+        <Text style={[styles.contactButtonText, { color: colors.background }]}>Book Service</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   )

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from "react-native"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { Bell } from "react-native-feather"
+import { Bell, FileText, MapPin } from "react-native-feather"
 import { useRouter } from "expo-router"
 import { categories, experts, locations } from "../../constants/Data"
 import type { Category, Expert, Location } from "../../types"
@@ -12,6 +12,7 @@ import SearchBar from "../../components/SearchBar"
 import CategoryItem from "../../components/CategoryItem"
 import ExpertCard from "../../components/ExpertCard"
 import { useTheme } from "../../context/ThemeContext"
+import { getCurrentLocation } from "../../services/LocationService"
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -20,8 +21,32 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [filteredExperts, setFilteredExperts] = useState<Expert[]>(experts)
+  const [userLocation, setUserLocation] = useState<string | null>(null)
 
-  // Filter experts based on search query and selected category
+  // Get user's current location on component mount
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const location = await getCurrentLocation()
+        if (location && location.city) {
+          setUserLocation(location.city)
+
+          // Find matching location in our predefined locations
+          const matchedLocation = locations.find((loc) => loc.name.toLowerCase() === location.city?.toLowerCase())
+
+          if (matchedLocation) {
+            setSelectedLocation(matchedLocation)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error)
+      }
+    }
+
+    fetchLocation()
+  }, [])
+
+  // Filter experts based on search query, selected category, and location
   useEffect(() => {
     const filtered = experts.filter((expert) => {
       // Filter by location
@@ -54,7 +79,7 @@ export default function HomeScreen() {
   }
 
   const handleScanQR = () => {
-    alert("QR Scanner would open here")
+    Alert.alert("QR Scanner", "QR Scanner would open here")
   }
 
   const handleCategoryPress = (category: Category) => {
@@ -70,16 +95,34 @@ export default function HomeScreen() {
     router.push("/notifications")
   }
 
+  const handleServiceRequestsPress = () => {
+    router.push("/worker-responses")
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
       <View style={styles.header}>
         <LocationSelector selectedLocation={selectedLocation} onSelectLocation={setSelectedLocation} />
-        <TouchableOpacity style={styles.notificationButton} onPress={handleNotificationPress}>
-          <Bell width={24} height={24} stroke={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.headerButton} onPress={handleServiceRequestsPress}>
+            <FileText width={24} height={24} stroke={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={handleNotificationPress}>
+            <Bell width={24} height={24} stroke={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {userLocation && (
+          <View style={[styles.locationBanner, { backgroundColor: colors.primary + "20" }]}>
+            <MapPin width={16} height={16} stroke={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.primary }]}>
+              Using your current location: {userLocation}
+            </Text>
+          </View>
+        )}
+
         <SearchBar onSearch={handleSearch} onScanQR={handleScanQR} />
 
         <View style={styles.categoriesSection}>
@@ -139,12 +182,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  notificationButton: {
+  headerButtons: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  headerButton: {
     padding: 4,
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  locationBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    gap: 8,
+  },
+  locationText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   categoriesSection: {
     marginBottom: 24,

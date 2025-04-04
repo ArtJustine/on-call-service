@@ -31,8 +31,8 @@ export default function ExpertProfileScreen() {
     )
   }
 
-  const handleContact = () => {
-    alert(`Contacting ${expert.name} at ${expert.contactNumber}`)
+  const handleBookService = () => {
+    router.push(`/book-service/${expert.id}`)
   }
 
   return (
@@ -92,8 +92,11 @@ export default function ExpertProfileScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
-        <TouchableOpacity style={[styles.contactButton, { backgroundColor: colors.secondary }]} onPress={handleContact}>
-          <Text style={[styles.contactButtonText, { color: colors.background }]}>Contact</Text>
+        <TouchableOpacity
+          style={[styles.contactButton, { backgroundColor: colors.secondary }]}
+          onPress={handleBookService}
+        >
+          <Text style={[styles.contactButtonText, { color: colors.background }]}>Book Service</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
