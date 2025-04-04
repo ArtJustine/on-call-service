@@ -1,64 +1,52 @@
 "use client"
-
-import { useState } from "react"
-import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from "react-native"
-import { ChevronDown } from "react-native-feather"
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet } from "react-native"
+import { MapPin } from "react-native-feather"
 import { useTheme } from "../context/ThemeContext"
-import { locations } from "../constants/Data"
-import type { Location } from "../types"
+import { getCurrentLocation } from "../services/LocationService"
 
 interface LocationSelectorProps {
-  selectedLocation: Location
-  onSelectLocation: (location: Location) => void
+  selectedLocation: { id: string; name: string }
+  onSelectLocation: (location: { id: string; name: string }) => void
 }
 
 export default function LocationSelector({ selectedLocation, onSelectLocation }: LocationSelectorProps) {
-  const [modalVisible, setModalVisible] = useState(false)
   const { colors } = useTheme()
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Get user's current location on component mount
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        setIsLoading(true)
+        const location = await getCurrentLocation()
+        if (location && location.city) {
+          // Create a location object with the detected city
+          const userLocation = {
+            id: "current",
+            name: location.city,
+          }
+
+          // Update the selected location
+          onSelectLocation(userLocation)
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchLocation()
+  }, [onSelectLocation])
 
   return (
-    <>
-      <TouchableOpacity style={styles.container} onPress={() => setModalVisible(true)}>
-        <Text style={[styles.locationText, { color: colors.subtext }]}>{selectedLocation.name}</Text>
-        <ChevronDown width={12} height={12} stroke={colors.subtext} />
-      </TouchableOpacity>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Location</Text>
-            <FlatList
-              data={locations}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.locationItem, { borderBottomColor: colors.border }]}
-                  onPress={() => {
-                    onSelectLocation(item)
-                    setModalVisible(false)
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.locationItemText,
-                      { color: colors.text },
-                      selectedLocation.id === item.id && { color: colors.primary, fontWeight: "bold" },
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </View>
-      </Modal>
-    </>
+    <View style={styles.container}>
+      <MapPin width={20} height={20} stroke={colors.primary} />
+      <Text style={[styles.locationText, { color: colors.text }]}>
+        {isLoading ? "Detecting location..." : selectedLocation.name}
+      </Text>
+    </View>
   )
 }
 
@@ -69,32 +57,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locationText: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "50%",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  locationItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  locationItemText: {
     fontSize: 16,
+    fontWeight: "500",
+    marginLeft: 4,
   },
 })
 

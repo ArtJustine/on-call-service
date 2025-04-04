@@ -1,17 +1,56 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Switch, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { Plus, X, Calendar, Clock, DollarSign, AlertTriangle } from "react-native-feather"
+import { Plus, X, Calendar, Clock, DollarSign, AlertTriangle, ChevronDown } from "react-native-feather"
 import { useRouter } from "expo-router"
 import { bookings } from "../../constants/Data"
 import { useTheme } from "../../context/ThemeContext"
+import { getCurrentLocation } from "../../services/LocationService"
 
 export default function BookingsScreen() {
   const router = useRouter()
   const { colors } = useTheme()
   const [showPostJobModal, setShowPostJobModal] = useState(false)
   const [activeTab, setActiveTab] = useState<"bookings" | "posts">("bookings")
+  const [showServiceTypeDropdown, setShowServiceTypeDropdown] = useState(false)
+  const [selectedServiceType, setSelectedServiceType] = useState("")
+  const [isUrgent, setIsUrgent] = useState(false)
+  const [jobDate, setJobDate] = useState("")
+  const [jobTime, setJobTime] = useState("")
+  const [minBudget, setMinBudget] = useState("")
+  const [maxBudget, setMaxBudget] = useState("")
+  const [jobDescription, setJobDescription] = useState("")
+  const [userLocation, setUserLocation] = useState<string | null>(null)
+
+  // Service type options
+  const serviceTypes = [
+    "Mechanic",
+    "Electrician",
+    "Plumber",
+    "Carpenter",
+    "Painter",
+    "HVAC Technician",
+    "Landscaper",
+    "Appliance Repair",
+    "Locksmith"
+  ]
+
+  // Get user's current location on component mount
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const location = await getCurrentLocation()
+        if (location && location.city) {
+          setUserLocation(location.city)
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error)
+      }
+    }
+
+    fetchLocation()
+  }, [])
 
   // Mock job posts data
   const [jobPosts, setJobPosts] = useState([
@@ -25,6 +64,7 @@ export default function BookingsScreen() {
       description: "Need help with car engine that won't start. Possibly battery or starter issue.",
       status: "active",
       applicants: 3,
+      location: "Angeles City",
     },
     {
       id: "2",
@@ -36,22 +76,92 @@ export default function BookingsScreen() {
       description: "Leaking pipe under kitchen sink needs repair.",
       status: "active",
       applicants: 1,
+      location: "Manila",
     },
   ])
 
-  const handleAddJobPost = (jobPost: any) => {
+  // Handle date input with auto-formatting
+  const handleDateChange = (text: string) => {
+    // Remove any non-numeric characters
+    const numericValue = text.replace(/[^0-9]/g, '');
+    
+    // Format the date with slashes
+    let formattedDate = '';
+    
+    if (numericValue.length <= 2) {
+      formattedDate = numericValue;
+    } else if (numericValue.length <= 4) {
+      formattedDate = `${numericValue.slice(0, 2)}/${numericValue.slice(2)}`;
+    } else {
+      formattedDate = `${numericValue.slice(0, 2)}/${numericValue.slice(2, 4)}/${numericValue.slice(4, 8)}`;
+    }
+    
+    setJobDate(formattedDate);
+  };
+
+  const handleAddJobPost = () => {
+    if (!selectedServiceType || !minBudget || !maxBudget || !jobDate || !jobDescription) {
+      // In a real app, you'd show validation errors
+      alert("Please fill in all required fields")
+      return
+    }
+    
+    const newJobPostId = (jobPosts.length + 1).toString();
+    
+    // Create job post object
     const newJobPost = {
-      id: (jobPosts.length + 1).toString(),
-      ...jobPost,
+      id: newJobPostId,
+      service: selectedServiceType,
+      budget: `₱${minBudget} - ₱${maxBudget}`,
+      date: jobDate,
+      time: jobTime || "Flexible",
+      isUrgent: isUrgent,
+      description: jobDescription,
       status: "active",
       applicants: 0,
+      location: userLocation || "Unknown Location",
     }
+    
+    // Create a corresponding booking entry
+    const newBooking = {
+      id: newJobPostId,
+      service: selectedServiceType,
+      expertName: "Pending Assignment",
+      date: jobDate,
+      time: jobTime || "Flexible",
+      status: "upcoming",
+      price: `₱${maxBudget}`,
+      location: userLocation || "Unknown Location",
+      duration: "TBD",
+      notes: jobDescription,
+    }
+    
+    // Update both arrays
     setJobPosts([newJobPost, ...jobPosts])
+    
+    // Add to bookings array if it's a state variable, otherwise we'd use the imported bookings array
+    // For this example, we'll just simulate adding to bookings
+    // In a real app, you would update your data source
+    
+    // Reset form
+    setSelectedServiceType("")
+    setMinBudget("")
+    setMaxBudget("")
+    setJobDate("")
+    setJobTime("")
+    setIsUrgent(false)
+    setJobDescription("")
     setShowPostJobModal(false)
+    
+    // Switch to the bookings tab to show the new booking
+    setActiveTab("bookings")
+    
+    // Alert to simulate notification to workers in the area
+    alert(`Your job has been posted! Workers in ${userLocation || "your area"} will be notified.`);
   }
 
   const handleViewApplicants = (postId: string) => {
-    router.push(`/job-post-applicants/${postId}`)
+    router.push(`/job-post-details/${postId}`)
   }
 
   const renderJobPostItem = ({ item }: { item: any }) => (
@@ -230,14 +340,60 @@ export default function BookingsScreen() {
               contentContainerStyle={{ paddingBottom: 30 }}
               showsVerticalScrollIndicator={true}
             >
-              {/* Service Type */}
+              {/* Service Type Dropdown */}
               <View style={styles.formGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>Service Type *</Text>
                 <TouchableOpacity
                   style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
+                  onPress={() => setShowServiceTypeDropdown(!showServiceTypeDropdown)}
                 >
-                  <Text style={[styles.placeholder, { color: colors.subtext }]}>Select Service Type</Text>
+                  <Text 
+                    style={[
+                      selectedServiceType ? { color: colors.text } : styles.placeholder, 
+                      { color: selectedServiceType ? colors.text : colors.subtext }
+                    ]}
+                  >
+                    {selectedServiceType || "Select Service Type"}
+                  </Text>
+                  <ChevronDown width={20} height={20} stroke={colors.subtext} />
                 </TouchableOpacity>
+                
+                {showServiceTypeDropdown && (
+                  <View style={[styles.dropdownList, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled={true}>
+                      {serviceTypes.map((type, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[
+                            styles.dropdownItem,
+                            index < serviceTypes.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                          ]}
+                          onPress={() => {
+                            setSelectedServiceType(type)
+                            setShowServiceTypeDropdown(false)
+                          }}
+                        >
+                          <Text style={{ color: colors.text }}>{type}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              {/* Location */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Location</Text>
+                <View
+                  style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
+                >
+                  <Text style={[styles.locationText, { color: colors.text }]}>
+                    {userLocation || "Detecting your location..."}
+                  </Text>
+                </View>
+                <Text style={[styles.helperText, { color: colors.subtext }]}>
+                  Workers in this area will be notified about your job post
+                </Text>
               </View>
 
               {/* Budget Range */}
@@ -251,6 +407,8 @@ export default function BookingsScreen() {
                       placeholder="Min"
                       placeholderTextColor={colors.subtext}
                       keyboardType="numeric"
+                      value={minBudget}
+                      onChangeText={setMinBudget}
                     />
                   </View>
                   <Text style={[styles.budgetSeparator, { color: colors.subtext }]}>to</Text>
@@ -261,6 +419,8 @@ export default function BookingsScreen() {
                       placeholder="Max"
                       placeholderTextColor={colors.subtext}
                       keyboardType="numeric"
+                      value={maxBudget}
+                      onChangeText={setMaxBudget}
                     />
                   </View>
                 </View>
@@ -277,6 +437,10 @@ export default function BookingsScreen() {
                     style={[styles.input, { color: colors.text }]}
                     placeholder="MM/DD/YYYY"
                     placeholderTextColor={colors.subtext}
+                    keyboardType="number-pad"
+                    value={jobDate}
+                    onChangeText={handleDateChange}
+                    maxLength={10} // MM/DD/YYYY = 10 characters
                   />
                 </View>
               </View>
@@ -292,6 +456,8 @@ export default function BookingsScreen() {
                     style={[styles.input, { color: colors.text }]}
                     placeholder="e.g., Morning, Afternoon, or specific time"
                     placeholderTextColor={colors.subtext}
+                    value={jobTime}
+                    onChangeText={setJobTime}
                   />
                 </View>
               </View>
@@ -303,7 +469,12 @@ export default function BookingsScreen() {
                     <AlertTriangle width={20} height={20} stroke={colors.error} style={styles.inputIcon} />
                     <Text style={[styles.label, { color: colors.text }]}>Mark as Urgent</Text>
                   </View>
-                  <Switch trackColor={{ false: colors.lightGray, true: colors.error + "70" }} thumbColor={"#f4f3f4"} />
+                  <Switch 
+                    trackColor={{ false: colors.lightGray, true: colors.error + "70" }} 
+                    thumbColor={"#f4f3f4"} 
+                    value={isUrgent}
+                    onValueChange={setIsUrgent}
+                  />
                 </View>
                 <Text style={[styles.helperText, { color: colors.subtext }]}>
                   Marking as urgent will highlight your job post to attract immediate attention
@@ -323,6 +494,8 @@ export default function BookingsScreen() {
                     multiline
                     numberOfLines={4}
                     textAlignVertical="top"
+                    value={jobDescription}
+                    onChangeText={setJobDescription}
                   />
                 </View>
               </View>
@@ -337,23 +510,7 @@ export default function BookingsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.submitButton, { backgroundColor: colors.primary }]}
-                  onPress={() => {
-                    // Create a dummy job post
-                    const newJobPost = {
-                      id: (jobPosts.length + 1).toString(),
-                      service: "New Service",
-                      budget: "₱200 - ₱300",
-                      date: "05/30/2023",
-                      time: "Flexible",
-                      isUrgent: false,
-                      description: "This is a new job post created from the form.",
-                      status: "active",
-                      applicants: 0,
-                    }
-                    setJobPosts([newJobPost, ...jobPosts])
-                    setShowPostJobModal(false)
-                    setActiveTab("posts")
-                  }}
+                  onPress={handleAddJobPost}
                 >
                   <Text style={[styles.submitButtonText, { color: colors.background }]}>Post Job</Text>
                 </TouchableOpacity>
@@ -604,12 +761,12 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
   },
-
   placeholder: {
     flex: 1,
     paddingVertical: 12,
@@ -698,4 +855,22 @@ const styles = StyleSheet.create({
   dropdownButtonText: {
     fontSize: 16,
   },
+  // Dropdown menu styles
+  dropdownList: {
+    position: "absolute",
+    top: 76, // positioned below the input field
+    left: 0,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 16,
+  }
 })
