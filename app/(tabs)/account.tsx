@@ -1,5 +1,5 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { ChevronRight, Settings, CreditCard, Bell, Shield, HelpCircle, LogOut } from "react-native-feather"
 import { useRouter } from "expo-router"
@@ -53,7 +53,25 @@ export default function AccountScreen() {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={() => alert("Logout pressed")}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => {
+            Alert.alert("Logout", "Are you sure you want to logout?", [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Logout",
+                onPress: () => {
+                  // Here you would typically clear auth tokens/state
+                  // For now, we'll just navigate to the welcome screen
+                  router.push("/welcome")
+                },
+              },
+            ])
+          }}
+        >
           <LogOut width={20} height={20} stroke={colors.primary} />
           <Text style={[styles.logoutText, { color: colors.primary }]}>Log Out</Text>
         </TouchableOpacity>

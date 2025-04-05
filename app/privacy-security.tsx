@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, Platform } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { ArrowLeft, Lock, Eye, Shield, Trash2 } from "react-native-feather"
 import { useRouter } from "expo-router"
@@ -17,16 +17,88 @@ export default function PrivacySecurityScreen() {
   const [dataSharing, setDataSharing] = useState(true)
 
   const handleChangePassword = () => {
-    Alert.alert("Change Password", "You'll receive an email with instructions to change your password.", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Send Email",
-        onPress: () => Alert.alert("Success", "Password reset email sent!"),
-      },
-    ])
+    if (Platform.OS === "ios") {
+      // iOS implementation with Alert.prompt
+      Alert.prompt(
+        "Current Password",
+        "Please enter your current password",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Next",
+            onPress: (currentPassword) => {
+              if (!currentPassword) {
+                Alert.alert("Error", "Current password is required")
+                return
+              }
+
+              Alert.prompt(
+                "New Password",
+                "Please enter your new password",
+                [
+                  {
+                    text: "Cancel",
+                    style: "cancel",
+                  },
+                  {
+                    text: "Next",
+                    onPress: (newPassword) => {
+                      if (!newPassword) {
+                        Alert.alert("Error", "New password is required")
+                        return
+                      }
+
+                      Alert.prompt(
+                        "Confirm Password",
+                        "Please confirm your new password",
+                        [
+                          {
+                            text: "Cancel",
+                            style: "cancel",
+                          },
+                          {
+                            text: "Change Password",
+                            onPress: (confirmPassword) => {
+                              if (newPassword !== confirmPassword) {
+                                Alert.alert("Error", "Passwords do not match")
+                                return
+                              }
+
+                              Alert.alert("Success", "Your password has been changed successfully!")
+                            },
+                          },
+                        ],
+                        "secure-text",
+                      )
+                    },
+                  },
+                ],
+                "secure-text",
+              )
+            },
+          },
+        ],
+        "secure-text",
+      )
+    } else {
+      // Android alternative (would typically use a modal with TextInput)
+      Alert.alert("Change Password", "On Android, this would open a custom password change form.", [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Open Form",
+          onPress: () => {
+            // Here you would navigate to a password change screen
+            Alert.alert("Success", "Password change form would open here")
+          },
+        },
+      ])
+    }
   }
 
   const handleDeleteAccount = () => {
@@ -152,7 +224,7 @@ export default function PrivacySecurityScreen() {
           >
             <View style={styles.menuItemLeft}>
               <Shield width={20} height={20} stroke={colors.subtext} />
-              <Text style={[styles.menuItemText, { color: colors.text }]}>Terms And Conditions</Text>
+              <Text style={[styles.menuItemText, { color: colors.text }]}>Terms of Service</Text>
             </View>
             <ArrowLeft width={20} height={20} stroke={colors.subtext} style={{ transform: [{ rotate: "180deg" }] }} />
           </TouchableOpacity>

@@ -34,6 +34,12 @@ export default function CategoryItem({ category, onPress, isSelected = false }: 
         return <Settings width={size} height={size} stroke={iconColor} />
       case "lock":
         return <Lock width={size} height={size} stroke={iconColor} />
+      case "hammer":
+        return <Tool width={size} height={size} stroke={iconColor} />
+      case "paintbrush":
+        return <Edit2 width={size} height={size} stroke={iconColor} />
+      case "washing-machine":
+        return <Settings width={size} height={size} stroke={iconColor} />
       default:
         return <Tool width={size} height={size} stroke={iconColor} />
     }

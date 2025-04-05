@@ -35,11 +35,8 @@ export default function SavedScreen() {
   const renderExpertItem = ({ item }: { item: Expert }) => (
     <View style={styles.expertItemContainer}>
       <ExpertCard expert={item} />
-      <TouchableOpacity
-        style={[styles.deleteButton, { backgroundColor: colors.error }]}
-        onPress={() => handleDeleteExpert(item.id)}
-      >
-        <Trash2 width={20} height={20} stroke="#FFFFFF" />
+      <TouchableOpacity style={[styles.deleteButton]} onPress={() => handleDeleteExpert(item.id)}>
+        <Trash2 width={20} height={20} stroke={colors.error} />
       </TouchableOpacity>
     </View>
   )
@@ -120,6 +117,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
+    backgroundColor: "rgba(244, 67, 54, 0.2)",
   },
 })
 

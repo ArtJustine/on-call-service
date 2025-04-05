@@ -16,36 +16,36 @@ import { ArrowLeft, MessageCircle, HelpCircle, Book, Phone, Mail, ChevronDown, C
 import { useRouter } from "expo-router"
 import { useTheme } from "../context/ThemeContext"
 
-// FAQ data
+// FAQ data for workers
 const faqs = [
   {
-    question: "How do I book a service?",
+    question: "How do I receive job requests?",
     answer:
-      "To book a service, browse through available experts, select one that matches your needs, and tap on 'Book Service'. Follow the prompts to select your preferred date, time, and payment method.",
+      "Job requests will appear in your Available tab. You can review the details and choose to accept or decline each request based on your availability and expertise.",
   },
   {
     question: "How do payments work?",
     answer:
-      "Payments are processed securely through our platform. You can pay using credit/debit cards or other supported payment methods. Funds are only released to the service provider after you confirm the service has been completed satisfactorily.",
+      "After completing a job, the client will confirm completion through the app. Payment will be processed and transferred to your account within 1-3 business days, depending on your payment method.",
   },
   {
-    question: "What if I need to cancel a booking?",
+    question: "What if I need to cancel a job?",
     answer:
-      "You can cancel a booking through the 'Bookings' tab. If you cancel more than 24 hours before the scheduled time, you'll receive a full refund. Cancellations within 24 hours may be subject to a cancellation fee.",
+      "If you need to cancel an accepted job, go to the Upcoming tab, select the job, and tap 'Cancel Job'. Please provide a reason for cancellation. Note that frequent cancellations may affect your profile rating.",
   },
   {
-    question: "How are service providers vetted?",
+    question: "How are my ratings calculated?",
     answer:
-      "All service providers undergo a thorough verification process, including identity verification, background checks, and skills assessment. We also maintain a rating system based on customer feedback to ensure quality service.",
+      "Ratings are based on client feedback after job completion. Clients rate your service on a 1-5 star scale and can leave reviews. Your overall rating is an average of all your job ratings.",
   },
   {
-    question: "What if I'm not satisfied with the service?",
+    question: "How can I improve my visibility to clients?",
     answer:
-      "If you're not satisfied with the service provided, please rate the service and provide feedback. You can also contact our support team, and we'll work to resolve the issue, which may include a partial or full refund depending on the circumstances.",
+      "Complete your profile with detailed information about your skills and experience. Upload certification documents, maintain a high rating by providing quality service, and respond promptly to job requests.",
   },
 ]
 
-export default function HelpSupportScreen() {
+export default function WorkerHelpSupportScreen() {
   const router = useRouter()
   const { colors } = useTheme()
 
@@ -123,17 +123,16 @@ export default function HelpSupportScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Book width={24} height={24} stroke={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>User Guide</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Service Provider Guide</Text>
           </View>
 
           <TouchableOpacity
             style={[styles.guideItem, { backgroundColor: colors.primary + "10" }]}
             onPress={() => {
-              // Open the URL in the device's browser
               Linking.openURL("https://v0-revit-landing-page.vercel.app/")
             }}
           >
-            <Text style={[styles.guideText, { color: colors.primary }]}>View Complete User Guide</Text>
+            <Text style={[styles.guideText, { color: colors.primary }]}>View Complete Guide</Text>
           </TouchableOpacity>
         </View>
 
@@ -146,7 +145,12 @@ export default function HelpSupportScreen() {
           <View style={styles.contactOptions}>
             <TouchableOpacity
               style={[styles.contactOption, { borderColor: colors.border }]}
-              onPress={() => Alert.alert("Call Support", "This would initiate a call to support.")}
+              onPress={() => {
+                Alert.alert("Call Support", "Would you like to call our service provider support line?", [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Call", onPress: () => Linking.openURL("tel:+1234567890") },
+                ])
+              }}
             >
               <Phone width={24} height={24} stroke={colors.primary} />
               <Text style={[styles.contactOptionText, { color: colors.text }]}>Call Us</Text>
@@ -154,7 +158,9 @@ export default function HelpSupportScreen() {
 
             <TouchableOpacity
               style={[styles.contactOption, { borderColor: colors.border }]}
-              onPress={() => Alert.alert("Email Support", "This would open your email app.")}
+              onPress={() => {
+                Linking.openURL("mailto:support@oncallservices.com?subject=Service Provider Support Request")
+              }}
             >
               <Mail width={24} height={24} stroke={colors.primary} />
               <Text style={[styles.contactOptionText, { color: colors.text }]}>Email</Text>
