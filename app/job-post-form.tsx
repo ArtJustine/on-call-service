@@ -92,7 +92,7 @@ const JobPostForm = () => {
         value={salary}
         onChangeText={setSalary}
         placeholder="Enter salary"
-        placeholderTextColor={colors.placeholder}
+        placeholderTextColor={colors.placeholder} 
         keyboardType="numeric"
       />
 

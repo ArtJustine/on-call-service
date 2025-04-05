@@ -153,12 +153,12 @@ export default function LoginScreen() {
                 >
                   <Lock width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Password"
-                    placeholderTextColor={colors.subtext}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder="Password"
+                  placeholderTextColor={colors.subtext}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                     {showPassword ? (
