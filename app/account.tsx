@@ -1,15 +1,20 @@
+"use client"
+
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { ChevronRight, Settings, CreditCard, Bell, Shield, HelpCircle, LogOut } from "react-native-feather"
 import Colors from "../constants/Colors"
+import { useRouter } from "expo-router"
 
 export default function AccountScreen() {
+  const router = useRouter()
+  // Update the menuItems array to include the correct navigation
   const menuItems = [
-    { icon: Settings, title: "Settings", onPress: () => alert("Settings pressed") },
-    { icon: CreditCard, title: "Payment Methods", onPress: () => alert("Payment Methods pressed") },
-    { icon: Bell, title: "Notifications", onPress: () => alert("Notifications pressed") },
-    { icon: Shield, title: "Privacy & Security", onPress: () => alert("Privacy & Security pressed") },
-    { icon: HelpCircle, title: "Help & Support", onPress: () => alert("Help & Support pressed") },
+    { icon: Settings, title: "Settings", onPress: () => router.push("/settings") },
+    { icon: CreditCard, title: "Payment Methods", onPress: () => router.push("/payment-methods") },
+    { icon: Bell, title: "Notifications", onPress: () => router.push("/notifications") },
+    { icon: Shield, title: "Privacy & Security", onPress: () => router.push("/privacy-security") },
+    { icon: HelpCircle, title: "Help & Support", onPress: () => router.push("/help-support") },
   ]
 
   return (

@@ -15,9 +15,9 @@ export default function WelcomeScreen() {
           {/* Logo placeholder */}
           <Image source={{ uri: "/placeholder.svg?height=120&width=120" }} style={styles.logo} />
           <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.logoText, { color: colors.background }]}>OCS</Text>
+            <Text style={[styles.logoText, { color: colors.background }]}></Text>
           </View>
-          <Text style={[styles.appName, { color: colors.text }]}>On-Call Services</Text>
+          <Text style={[styles.appName, { color: colors.text }]}>Revit</Text>
           <Text style={[styles.tagline, { color: colors.subtext }]}>Expert help, just a tap away</Text>
         </View>
 

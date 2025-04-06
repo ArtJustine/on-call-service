@@ -13,12 +13,45 @@ interface CategoryItemProps {
 export default function CategoryItem({ category, onPress, isSelected = false }: CategoryItemProps) {
   const { colors, isDark } = useTheme()
 
+<<<<<<< HEAD
   // Get the appropriate icon URL based on theme
   const getCategoryIconUrl = () => {
     const iconKey = ICON_MAP[category.icon as keyof typeof ICON_MAP] || "mechanic"
     return isDark
       ? CATEGORY_ICONS_DARK[iconKey as keyof typeof CATEGORY_ICONS_DARK]
       : CATEGORY_ICONS_LIGHT[iconKey as keyof typeof CATEGORY_ICONS_LIGHT]
+=======
+  const getIcon = () => {
+    const iconColor = isSelected ? colors.background : colors.primary
+    const size = 24
+
+    switch (category.icon) {
+      case "tool":
+        return <Tool width={size} height={size} stroke={iconColor} />
+      case "zap":
+        return <Zap width={size} height={size} stroke={iconColor} />
+      case "droplet":
+        return <Droplet width={size} height={size} stroke={iconColor} />
+      case "edit-2":
+        return <Edit2 width={size} height={size} stroke={iconColor} />
+      case "thermometer":
+        return <Thermometer width={size} height={size} stroke={iconColor} />
+      case "scissors":
+        return <Scissors width={size} height={size} stroke={iconColor} />
+      case "settings":
+        return <Settings width={size} height={size} stroke={iconColor} />
+      case "lock":
+        return <Lock width={size} height={size} stroke={iconColor} />
+      case "hammer":
+        return <Tool width={size} height={size} stroke={iconColor} />
+      case "paintbrush":
+        return <Edit2 width={size} height={size} stroke={iconColor} />
+      case "washing-machine":
+        return <Settings width={size} height={size} stroke={iconColor} />
+      default:
+        return <Tool width={size} height={size} stroke={iconColor} />
+    }
+>>>>>>> a3a07a092e12a8c92461089abc973f7a800825ed
   }
 
   return (

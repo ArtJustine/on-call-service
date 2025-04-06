@@ -160,9 +160,7 @@ export default function BookServiceScreen() {
             <View>
               <Text style={[styles.expertName, { color: colors.text }]}>{expert.name}</Text>
               <Text style={[styles.expertProfession, { color: colors.subtext }]}>{expert.profession}</Text>
-              {userLocation && (
-                <Text style={[styles.locationText, { color: colors.primary }]}>Near your location: {userLocation}</Text>
-              )}
+              {userLocation && <Text style={[styles.locationText, { color: colors.primary }]}>{userLocation}</Text>}
             </View>
           </View>
           <Text style={[styles.expertPrice, { color: colors.primary }]}>{expert.price}</Text>

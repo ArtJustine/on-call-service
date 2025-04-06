@@ -1,14 +1,15 @@
 import type { Booking, Category, Expert, Location, Notification } from "../types"
 
+// Update the categories array to use the new icons
 export const categories: Category[] = [
   { id: "1", name: "Mechanic", icon: "tool" },
   { id: "2", name: "Electrician", icon: "zap" },
   { id: "3", name: "Plumber", icon: "droplet" },
-  { id: "4", name: "Carpenter", icon: "tool" },
-  { id: "5", name: "Painter", icon: "edit-2" },
+  { id: "4", name: "Carpenter", icon: "hammer" },
+  { id: "5", name: "Painter", icon: "paintbrush" },
   { id: "6", name: "HVAC Technician", icon: "thermometer" },
   { id: "7", name: "Landscaper", icon: "scissors" },
-  { id: "8", name: "Appliance Repair", icon: "settings" },
+  { id: "8", name: "Appliance Repair", icon: "washing-machine" },
   { id: "9", name: "Locksmith", icon: "lock" },
 ]
 

@@ -1,17 +1,50 @@
-import { View, Text, StyleSheet, FlatList } from "react-native"
+"use client"
+import { useState } from "react"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import Colors from "../constants/Colors"
+import { Trash2 } from "react-native-feather"
+import { useRouter } from "expo-router"
 import ExpertCard from "../components/ExpertCard"
 import { experts } from "../constants/Data"
-
-// For demo purposes, we'll just show the first expert as saved
-const savedExperts = [experts[0]]
+import { useTheme } from "../context/ThemeContext"
+import type { Expert } from "../types"
 
 export default function SavedScreen() {
+  const router = useRouter()
+  const { colors } = useTheme()
+
+  // For demo purposes, we'll use state to manage saved experts
+  const [savedExperts, setSavedExperts] = useState<Expert[]>([experts[0], experts[1]])
+
+  const handleDeleteExpert = (expertId: string) => {
+    Alert.alert("Remove Expert", "Are you sure you want to remove this expert from your saved list?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => {
+          setSavedExperts(savedExperts.filter((expert) => expert.id !== expertId))
+        },
+      },
+    ])
+  }
+
+  const renderExpertItem = ({ item }: { item: Expert }) => (
+    <View style={styles.expertItemContainer}>
+      <ExpertCard expert={item} />
+      <TouchableOpacity style={[styles.deleteButton]} onPress={() => handleDeleteExpert(item.id)}>
+        <Trash2 width={20} height={20} stroke={colors.error} />
+      </TouchableOpacity>
+    </View>
+  )
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Saved Experts</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Saved Experts</Text>
       </View>
 
       <View style={styles.content}>
@@ -19,13 +52,15 @@ export default function SavedScreen() {
           <FlatList
             data={savedExperts}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <ExpertCard expert={item} />}
+            renderItem={renderExpertItem}
             contentContainerStyle={styles.expertsList}
           />
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No saved experts</Text>
-            <Text style={styles.emptyStateSubtext}>Save your favorite experts for quick access</Text>
+            <Text style={[styles.emptyStateText, { color: colors.text }]}>No saved experts</Text>
+            <Text style={[styles.emptyStateSubtext, { color: colors.subtext }]}>
+              Save your favorite experts for quick access
+            </Text>
           </View>
         )}
       </View>
@@ -36,7 +71,6 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: 16,
@@ -67,8 +101,23 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: Colors.darkGray,
     textAlign: "center",
+  },
+  expertItemContainer: {
+    position: "relative",
+    marginBottom: 16,
+  },
+  deleteButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+    backgroundColor: "rgba(244, 67, 54, 0.2)",
   },
 })
 
