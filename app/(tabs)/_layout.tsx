@@ -1,9 +1,8 @@
+"use client"
+
 import { Tabs } from "expo-router"
 import { Home, Bookmark, Calendar, User } from "react-native-feather"
-import Colors from "../../constants/Colors"
 import { useTheme } from "../../context/ThemeContext"
-import { View, StyleSheet } from "react-native"
-import AppLogo from "../../components/AppLogo"
 
 export default function TabsLayout() {
   const { colors } = useTheme()
@@ -17,19 +16,8 @@ export default function TabsLayout() {
           backgroundColor: colors.background,
           borderTopColor: colors.border,
         },
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          fontWeight: "bold",
-        },
-        headerTitleAlign: "center",
-        headerLeft: () => (
-          <View style={styles.headerLogo}>
-            <AppLogo size="small" showText={false} />
-          </View>
-        ),
+        // Hide the header completely
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -64,8 +52,3 @@ export default function TabsLayout() {
   )
 }
 
-const styles = StyleSheet.create({
-  headerLogo: {
-    marginLeft: 16,
-  }
-})

@@ -1,8 +1,9 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { useTheme } from "../context/ThemeContext"
+import AppLogo from "../components/AppLogo"
 
 export default function WelcomeScreen() {
   const router = useRouter()
@@ -12,12 +13,8 @@ export default function WelcomeScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          {/* Logo placeholder */}
-          <Image source={{ uri: "/placeholder.svg?height=120&width=120" }} style={styles.logo} />
-          <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.logoText, { color: colors.background }]}></Text>
-          </View>
-          <Text style={[styles.appName, { color: colors.text }]}>Revit</Text>
+          {/* Keeping the logo on the welcome screen */}
+          <AppLogo size="large" showText={false} />
           <Text style={[styles.tagline, { color: colors.subtext }]}>Expert help, just a tap away</Text>
         </View>
 
@@ -69,32 +66,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 60,
   },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
-  },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-    position: "absolute",
-    top: 10,
-  },
-  logoText: {
-    fontSize: 36,
-    fontWeight: "bold",
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
   tagline: {
     fontSize: 16,
+    marginTop: 8,
   },
   featureList: {
     marginVertical: 40,

@@ -20,11 +20,11 @@ export default function HomeScreen() {
   const [selectedLocation, setSelectedLocation] = useState<Location>(locations[0])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [filteredExperts, setFilteredExperts] = useState<Expert[]>(experts)
-  const [userLocation, setUserLocation] = useState<string | null>(null)
+  const [filteredExperts, setFilteredExperts] = useState<Expert[]>(experts) 
+  const [userLocation, setUserLocation] = useState<string | null>(null) 
 
   // Get user's current location on component mount
-  useEffect(() => {
+  /* useEffect(() => {
     const fetchLocation = async () => {
       try {
         const location = await getCurrentLocation()
@@ -37,7 +37,7 @@ export default function HomeScreen() {
     }
 
     fetchLocation()
-  }, [])
+  }, []) */
 
   // Filter experts based on search query, selected category, and location
   useEffect(() => {
@@ -105,18 +105,14 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-<<<<<<< HEAD
         {userLocation && (
           <View style={[styles.locationBanner, { backgroundColor: colors.primary + "20" }]}>
             <MapPin width={16} height={16} stroke={colors.primary} />
             <Text style={[styles.locationText, { color: colors.primary }]}>{userLocation}</Text>
           </View>
         )}
-=======
-        
->>>>>>> a3a07a092e12a8c92461089abc973f7a800825ed
 
         <SearchBar onSearch={handleSearch} onScanQR={handleScanQR} />
 
