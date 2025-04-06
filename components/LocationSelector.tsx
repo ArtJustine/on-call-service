@@ -20,11 +20,11 @@ export default function LocationSelector({ selectedLocation, onSelectLocation }:
       try {
         setIsLoading(true)
         const location = await getCurrentLocation()
-        if (location && location.city) {
-          // Create a location object with the detected city
+        if (location) {
+          // Create a location object with the detected location
           const userLocation = {
             id: "current",
-            name: location.city,
+            name: location.formattedAddress || location.city || "Unknown location",
           }
 
           // Update the selected location

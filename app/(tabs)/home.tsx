@@ -28,15 +28,8 @@ export default function HomeScreen() {
     const fetchLocation = async () => {
       try {
         const location = await getCurrentLocation()
-        if (location && location.city) {
-          setUserLocation(location.city)
-
-          // Find matching location in our predefined locations
-          const matchedLocation = locations.find((loc) => loc.name.toLowerCase() === location.city?.toLowerCase())
-
-          if (matchedLocation) {
-            setSelectedLocation(matchedLocation)
-          }
+        if (location) {
+          setUserLocation(location.formattedAddress || location.city || "Unknown location")
         }
       } catch (error) {
         console.error("Error fetching location:", error)
@@ -117,9 +110,7 @@ export default function HomeScreen() {
         {userLocation && (
           <View style={[styles.locationBanner, { backgroundColor: colors.primary + "20" }]}>
             <MapPin width={16} height={16} stroke={colors.primary} />
-            <Text style={[styles.locationText, { color: colors.primary }]}>
-              Using your current location: {userLocation}
-            </Text>
+            <Text style={[styles.locationText, { color: colors.primary }]}>{userLocation}</Text>
           </View>
         )}
 

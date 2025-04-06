@@ -1,6 +1,6 @@
 "use client"
-import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView, Modal } from "react-native"
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView, Modal, Alert } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import {
   Bell,
@@ -14,9 +14,15 @@ import {
   ArrowLeft,
   Check,
   X,
+  MapPin,
+  Info,
+  ExternalLink,
+  Clock,
+  HelpCircle,
 } from "react-native-feather"
 import { useRouter } from "expo-router"
 import { useTheme } from "../context/ThemeContext"
+import { getCurrentLocation } from "../services/LocationService"
 
 // Dummy data for worker dashboard
 const upcomingJobs = [
@@ -43,6 +49,52 @@ const upcomingJobs = [
     description: "Need to install new electrical outlets in the kitchen.",
     clientPhone: "+63 912 345 6790",
     clientEmail: "sarah.johnson@example.com",
+  },
+]
+
+// Available jobs based on worker's profession (Mechanic)
+const availableJobs = [
+  {
+    id: "3",
+    clientName: "Michael Brown",
+    service: "Car Battery Replacement",
+    date: "May 20, 2023",
+    time: "9:00 AM",
+    location: "789 Pine St, Angeles City",
+    price: 200,
+    description: "Need a new car battery installed. Current one is dead.",
+    clientPhone: "+63 912 345 6791",
+    clientEmail: "michael.brown@example.com",
+    distance: "2.3 km away",
+    postedTime: "Posted 2 hours ago",
+  },
+  {
+    id: "4",
+    clientName: "Emily Davis",
+    service: "Car Oil Change",
+    date: "May 21, 2023",
+    time: "11:00 AM",
+    location: "321 Elm St, Angeles City",
+    price: 150,
+    description: "Regular oil change for Toyota Corolla.",
+    clientPhone: "+63 912 345 6792",
+    clientEmail: "emily.davis@example.com",
+    distance: "3.5 km away",
+    postedTime: "Posted 5 hours ago",
+  },
+  {
+    id: "5",
+    clientName: "David Wilson",
+    service: "Engine Diagnostics",
+    date: "May 22, 2023",
+    time: "3:00 PM",
+    location: "654 Maple Ave, Angeles City",
+    price: 250,
+    description: "Car making strange noises. Need diagnostic check.",
+    clientPhone: "+63 912 345 6793",
+    clientEmail: "david.wilson@example.com",
+    distance: "1.8 km away",
+    postedTime: "Posted 30 minutes ago",
   },
 ]
 
@@ -105,6 +157,11 @@ const earningsData = {
       date: "May 10, 2023",
       amount: 150,
       status: "completed",
+      paymentMethod: "Credit Card",
+      serviceFee: 15,
+      netAmount: 135,
+      transactionId: "TRX-12345678",
+      time: "11:30 AM",
     },
     {
       id: "2",
@@ -113,6 +170,11 @@ const earningsData = {
       date: "May 5, 2023",
       amount: 350,
       status: "completed",
+      paymentMethod: "PayPal",
+      serviceFee: 35,
+      netAmount: 315,
+      transactionId: "TRX-87654321",
+      time: "4:15 PM",
     },
     {
       id: "3",
@@ -121,6 +183,11 @@ const earningsData = {
       date: "May 15, 2023",
       amount: 300,
       status: "pending",
+      paymentMethod: "Credit Card",
+      serviceFee: 30,
+      netAmount: 270,
+      transactionId: "TRX-23456789",
+      time: "1:45 PM",
     },
     {
       id: "4",
@@ -129,6 +196,11 @@ const earningsData = {
       date: "May 18, 2023",
       amount: 250,
       status: "pending",
+      paymentMethod: "Bank Transfer",
+      serviceFee: 25,
+      netAmount: 225,
+      transactionId: "TRX-34567890",
+      time: "3:20 PM",
     },
   ],
 }
@@ -191,15 +263,35 @@ const ratingsData = {
 export default function WorkerDashboardScreen() {
   const router = useRouter()
   const { colors } = useTheme()
-  const [activeTab, setActiveTab] = useState<"upcoming" | "pending" | "completed">("upcoming")
+  const [activeTab, setActiveTab] = useState<"available" | "pending" | "completed">("available")
   const [activeSection, setActiveSection] = useState<"jobs" | "earnings" | "ratings" | "profile">("jobs")
   const [selectedJob, setSelectedJob] = useState<any>(null)
   const [showJobDetailsModal, setShowJobDetailsModal] = useState(false)
-  
+  const [showTransactionDetailsModal, setShowTransactionDetailsModal] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
+
   // State for job lists
-  const [pendingJobsList, setPendingJobsList] = useState(pendingRequests);
-  const [upcomingJobsList, setUpcomingJobsList] = useState(upcomingJobs);
-  const [completedJobsList, setCompletedJobsList] = useState(completedJobs);
+  const [pendingJobsList, setPendingJobsList] = useState(pendingRequests)
+  const [upcomingJobsList, setUpcomingJobsList] = useState(upcomingJobs)
+  const [availableJobsList, setAvailableJobsList] = useState(availableJobs)
+  const [completedJobsList, setCompletedJobsList] = useState(completedJobs)
+
+  const [userLocation, setUserLocation] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const location = await getCurrentLocation()
+        if (location) {
+          setUserLocation(location.formattedAddress || location.city || "Unknown location")
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error)
+      }
+    }
+
+    fetchLocation()
+  }, [])
 
   const handleLogout = () => {
     router.push("/welcome")
@@ -207,35 +299,35 @@ export default function WorkerDashboardScreen() {
 
   const handleAcceptJob = (jobId: string) => {
     // Find the job in pending requests
-    const jobToAccept = pendingJobsList.find(job => job.id === jobId);
-    
+    const jobToAccept = pendingJobsList.find((job) => job.id === jobId)
+
     if (jobToAccept) {
       // Remove from pending
-      setPendingJobsList(current => current.filter(job => job.id !== jobId));
-      
+      setPendingJobsList((current) => current.filter((job) => job.id !== jobId))
+
       // Add to upcoming
-      setUpcomingJobsList(current => [...current, jobToAccept]);
-      
+      setUpcomingJobsList((current) => [...current, jobToAccept])
+
       // Show success message
-      alert(`Job ${jobId} accepted!`);
-      
+      alert(`Job ${jobId} accepted!`)
+
       // Close modal if open
-      setShowJobDetailsModal(false);
-      
+      setShowJobDetailsModal(false)
+
       // Switch to upcoming tab
-      setActiveTab("upcoming");
+      setActiveTab("available")
     }
   }
 
   const handleDeclineJob = (jobId: string) => {
     // Remove from pending
-    setPendingJobsList(current => current.filter(job => job.id !== jobId));
-    
+    setPendingJobsList((current) => current.filter((job) => job.id !== jobId))
+
     // Show success message
-    alert(`Job ${jobId} declined!`);
-    
+    alert(`Job ${jobId} declined!`)
+
     // Close modal if open
-    setShowJobDetailsModal(false);
+    setShowJobDetailsModal(false)
   }
 
   const handleJobPress = (job: any) => {
@@ -245,6 +337,11 @@ export default function WorkerDashboardScreen() {
 
   const handleMessageClient = (job: any) => {
     router.push(`/chat/${job.id}`)
+  }
+
+  const handleTransactionPress = (transaction: any) => {
+    setSelectedTransaction(transaction)
+    setShowTransactionDetailsModal(true)
   }
 
   const renderJobItem = ({ item }: { item: any }) => (
@@ -268,9 +365,23 @@ export default function WorkerDashboardScreen() {
         </View>
 
         <View style={styles.jobDetailItem}>
-          <MessageCircle width={16} height={16} stroke={colors.subtext} />
+          <MapPin width={16} height={16} stroke={colors.subtext} />
           <Text style={[styles.jobDetailText, { color: colors.subtext }]}>{item.location}</Text>
         </View>
+
+        {activeTab === "available" && item.distance && (
+          <View style={styles.jobDetailItem}>
+            <MapPin width={16} height={16} stroke={colors.primary} />
+            <Text style={[styles.jobDetailText, { color: colors.primary }]}>{item.distance}</Text>
+          </View>
+        )}
+
+        {activeTab === "available" && item.postedTime && (
+          <View style={styles.jobDetailItem}>
+            <Clock width={16} height={16} stroke={colors.subtext} />
+            <Text style={[styles.jobDetailText, { color: colors.subtext }]}>{item.postedTime}</Text>
+          </View>
+        )}
       </View>
 
       {activeTab === "pending" && (
@@ -291,6 +402,15 @@ export default function WorkerDashboardScreen() {
             <Text style={[styles.acceptButtonText, { color: colors.background }]}>Accept</Text>
           </TouchableOpacity>
         </View>
+      )}
+
+      {activeTab === "available" && (
+        <TouchableOpacity
+          style={[styles.applyButton, { backgroundColor: colors.primary }]}
+          onPress={() => handleAcceptJob(item.id)}
+        >
+          <Text style={[styles.applyButtonText, { color: colors.background }]}>Apply for Job</Text>
+        </TouchableOpacity>
       )}
 
       {activeTab === "completed" && item.rating && (
@@ -336,9 +456,10 @@ export default function WorkerDashboardScreen() {
       <Text style={[styles.transactionsTitle, { color: colors.text }]}>Recent Transactions</Text>
 
       {earningsData.transactions.map((transaction) => (
-        <View
+        <TouchableOpacity
           key={transaction.id}
           style={[styles.transactionCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+          onPress={() => handleTransactionPress(transaction)}
         >
           <View style={styles.transactionHeader}>
             <Text style={[styles.transactionService, { color: colors.text }]}>{transaction.service}</Text>
@@ -376,7 +497,7 @@ export default function WorkerDashboardScreen() {
               {transaction.status === "completed" ? "Completed" : "Pending"}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
       ))}
     </ScrollView>
   )
@@ -500,6 +621,14 @@ export default function WorkerDashboardScreen() {
 
         <TouchableOpacity
           style={[styles.menuItem, { backgroundColor: colors.background, borderColor: colors.border }]}
+          onPress={() => router.push("/worker-help-support")}
+        >
+          <HelpCircle width={20} height={20} stroke={colors.subtext} />
+          <Text style={[styles.menuItemText, { color: colors.text }]}>Help & Support</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { backgroundColor: colors.background, borderColor: colors.border }]}
           onPress={handleLogout}
         >
           <LogOut width={20} height={20} stroke={colors.error} />
@@ -514,6 +643,12 @@ export default function WorkerDashboardScreen() {
       <View style={styles.header}>
         <View>
           <Text style={[styles.greeting, { color: colors.text }]}>Hello, Bob</Text>
+          <View style={styles.locationContainer}>
+            <MapPin width={16} height={16} stroke={colors.primary} />
+            <Text style={[styles.locationText, { color: colors.subtext }]}>
+              {userLocation || "Detecting location..."}
+            </Text>
+          </View>
           <Text style={[styles.profession, { color: colors.subtext }]}>Mechanic</Text>
         </View>
 
@@ -560,7 +695,9 @@ export default function WorkerDashboardScreen() {
             height={20}
             stroke={activeSection === "earnings" ? colors.background : colors.primary}
           />
-          <Text style={[styles.statLabel, { color: activeSection === "earnings" ? colors.background : colors.primary }]}>
+          <Text
+            style={[styles.statLabel, { color: activeSection === "earnings" ? colors.background : colors.primary }]}
+          >
             Earnings
           </Text>
         </TouchableOpacity>
@@ -608,12 +745,12 @@ export default function WorkerDashboardScreen() {
             <TouchableOpacity
               style={[
                 styles.tab,
-                activeTab === "upcoming" && { borderBottomColor: colors.primary, borderBottomWidth: 2 },
+                activeTab === "available" && { borderBottomColor: colors.primary, borderBottomWidth: 2 },
               ]}
-              onPress={() => setActiveTab("upcoming")}
+              onPress={() => setActiveTab("available")}
             >
-              <Text style={[styles.tabText, { color: activeTab === "upcoming" ? colors.primary : colors.subtext }]}>
-                Upcoming
+              <Text style={[styles.tabText, { color: activeTab === "available" ? colors.primary : colors.subtext }]}>
+                Available
               </Text>
             </TouchableOpacity>
 
@@ -649,10 +786,10 @@ export default function WorkerDashboardScreen() {
 
           <FlatList
             data={
-              activeTab === "upcoming" 
-                ? upcomingJobsList 
-                : activeTab === "pending" 
-                  ? pendingJobsList 
+              activeTab === "available"
+                ? availableJobsList
+                : activeTab === "pending"
+                  ? pendingJobsList
                   : completedJobsList
             }
             keyExtractor={(item) => item.id}
@@ -662,10 +799,10 @@ export default function WorkerDashboardScreen() {
               <View style={styles.emptyState}>
                 <Text style={[styles.emptyStateText, { color: colors.text }]}>No jobs found</Text>
                 <Text style={[styles.emptyStateSubtext, { color: colors.subtext }]}>
-                  {activeTab === "pending" 
-                    ? "You don't have any pending job requests" 
-                    : activeTab === "upcoming" 
-                      ? "You don't have any upcoming jobs" 
+                  {activeTab === "pending"
+                    ? "You don't have any pending job requests"
+                    : activeTab === "available"
+                      ? "No available jobs matching your skills at the moment"
                       : "You haven't completed any jobs yet"}
                 </Text>
               </View>
@@ -702,7 +839,6 @@ export default function WorkerDashboardScreen() {
 
                   <View style={styles.detailItem}>
                     <Text style={[styles.detailLabel, { color: colors.subtext }]}>Client:</Text>
-                    <Text style={[styles.detailLabel,  { color: colors.subtext }]}>Client:</Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>{selectedJob.clientName}</Text>
                   </View>
 
@@ -794,6 +930,146 @@ export default function WorkerDashboardScreen() {
                       </TouchableOpacity>
                     </View>
                   )}
+
+                  {activeTab === "available" && (
+                    <TouchableOpacity
+                      style={[styles.applyButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        setShowJobDetailsModal(false)
+                        handleAcceptJob(selectedJob.id)
+                      }}
+                    >
+                      <Text style={[styles.applyButtonText, { color: colors.background }]}>Apply for Job</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Transaction Details Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showTransactionDetailsModal}
+        onRequestClose={() => setShowTransactionDetailsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowTransactionDetailsModal(false)}>
+                <ArrowLeft width={24} height={24} stroke={colors.text} />
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Transaction Details</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {selectedTransaction && (
+              <ScrollView style={styles.modalBody}>
+                <View style={[styles.detailCard, { borderColor: colors.border }]}>
+                  <View style={styles.transactionDetailHeader}>
+                    <Text style={[styles.detailCardTitle, { color: colors.text }]}>{selectedTransaction.service}</Text>
+                    <View
+                      style={[
+                        styles.transactionStatus,
+                        {
+                          backgroundColor:
+                            selectedTransaction.status === "completed" ? colors.success + "20" : colors.primary + "20",
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.transactionStatusText,
+                          {
+                            color: selectedTransaction.status === "completed" ? colors.success : colors.primary,
+                          },
+                        ]}
+                      >
+                        {selectedTransaction.status === "completed" ? "Completed" : "Pending"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={[styles.detailLabel, { color: colors.subtext }]}>Transaction ID:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {selectedTransaction.transactionId}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={[styles.detailLabel, { color: colors.subtext }]}>Client:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{selectedTransaction.clientName}</Text>
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={[styles.detailLabel, { color: colors.subtext }]}>Date & Time:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {selectedTransaction.date} at {selectedTransaction.time}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailItem}>
+                    <Text style={[styles.detailLabel, { color: colors.subtext }]}>Payment Method:</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {selectedTransaction.paymentMethod}
+                    </Text>
+                  </View>
+
+                  <View style={[styles.amountBreakdown, { backgroundColor: colors.lightGray }]}>
+                    <View style={styles.amountItem}>
+                      <Text style={[styles.amountLabel, { color: colors.text }]}>Total Amount:</Text>
+                      <Text style={[styles.amountValue, { color: colors.text }]}>₱{selectedTransaction.amount}</Text>
+                    </View>
+                    <View style={styles.amountItem}>
+                      <Text style={[styles.amountLabel, { color: colors.subtext }]}>Service Fee:</Text>
+                      <Text style={[styles.amountValue, { color: colors.subtext }]}>
+                        -₱{selectedTransaction.serviceFee}
+                      </Text>
+                    </View>
+                    <View style={[styles.amountDivider, { backgroundColor: colors.border }]} />
+                    <View style={styles.amountItem}>
+                      <Text style={[styles.amountLabel, { color: colors.primary, fontWeight: "bold" }]}>
+                        Net Amount:
+                      </Text>
+                      <Text style={[styles.amountValue, { color: colors.primary, fontWeight: "bold" }]}>
+                        ₱{selectedTransaction.netAmount}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.receiptButton, { borderColor: colors.primary }]}
+                    onPress={() => {
+                      Alert.alert("Receipt", "Download receipt functionality would be implemented here")
+                    }}
+                  >
+                    <Text style={[styles.receiptButtonText, { color: colors.primary }]}>Download Receipt</Text>
+                    <ExternalLink width={16} height={16} stroke={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.modalActions}>
+                  {selectedTransaction.status === "pending" && (
+                    <View style={styles.transactionNote}>
+                      <Info width={20} height={20} stroke={colors.primary} />
+                      <Text style={[styles.transactionNoteText, { color: colors.subtext }]}>
+                        This payment is still being processed and will be available in your account once completed.
+                      </Text>
+                    </View>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.modalActionButton, { backgroundColor: colors.primary }]}
+                    onPress={() => {
+                      setShowTransactionDetailsModal(false)
+                    }}
+                  >
+                    <Text style={[styles.modalActionButtonText, { color: colors.background }]}>Close</Text>
+                  </TouchableOpacity>
                 </View>
               </ScrollView>
             )}
@@ -946,6 +1222,18 @@ const styles = StyleSheet.create({
   declineButtonText: {
     fontSize: 14,
     fontWeight: "500",
+  },
+  applyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  applyButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#FFFFFF",
   },
   ratingContainer: {
     marginTop: 4,
@@ -1232,6 +1520,68 @@ const styles = StyleSheet.create({
   pendingModalActions: {
     flexDirection: "row",
     gap: 12,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  locationText: {
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  transactionDetailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  amountBreakdown: {
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  amountItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  amountLabel: {
+    fontSize: 14,
+  },
+  amountValue: {
+    fontSize: 14,
+  },
+  amountDivider: {
+    height: 1,
+    marginVertical: 8,
+  },
+  receiptButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  receiptButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  transactionNote: {
+    flexDirection: "row",
+    backgroundColor: "rgba(33, 150, 243, 0.1)",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  transactionNoteText: {
+    fontSize: 14,
+    flex: 1,
   },
 })
 

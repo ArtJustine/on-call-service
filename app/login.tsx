@@ -107,7 +107,7 @@ export default function LoginScreen() {
                     { color: accountType === "client" ? colors.background : colors.text },
                   ]}
                 >
-                  Client
+                  Clients
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -124,7 +124,7 @@ export default function LoginScreen() {
                     { color: accountType === "worker" ? colors.background : colors.text },
                   ]}
                 >
-                  Service Provider
+                  Professionals
                 </Text>
               </TouchableOpacity>
             </View>

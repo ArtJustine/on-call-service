@@ -1,6 +1,6 @@
 "use client"
 import React from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Linking } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { ArrowLeft, Bell, Globe, Moon, Shield, HelpCircle, LogOut } from "react-native-feather"
 import { useRouter } from "expo-router"
@@ -90,7 +90,12 @@ export default function WorkerSettingsScreen() {
               thumbColor={locationServices ? colors.primary : "#f4f3f4"}
             />
           </View>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              Linking.openURL("https://v0-revit-landing-page.vercel.app/privacy")
+            }}
+          >
             <View style={styles.settingInfo}>
               <Shield width={20} height={20} stroke={colors.subtext} />
               <Text style={[styles.settingText, { color: colors.text }]}>Privacy Policy</Text>
@@ -101,17 +106,10 @@ export default function WorkerSettingsScreen() {
 
         <View style={[styles.section, { borderBottomColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/worker-help-support")}>
             <View style={styles.settingInfo}>
               <HelpCircle width={20} height={20} stroke={colors.subtext} />
-              <Text style={[styles.settingText, { color: colors.text }]}>Help Center</Text>
-            </View>
-            <ArrowLeft width={20} height={20} stroke={colors.subtext} style={{ transform: [{ rotate: "180deg" }] }} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <HelpCircle width={20} height={20} stroke={colors.subtext} />
-              <Text style={[styles.settingText, { color: colors.text }]}>Contact Support</Text>
+              <Text style={[styles.settingText, { color: colors.text }]}>Help & Support</Text>
             </View>
             <ArrowLeft width={20} height={20} stroke={colors.subtext} style={{ transform: [{ rotate: "180deg" }] }} />
           </TouchableOpacity>

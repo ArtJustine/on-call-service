@@ -1,47 +1,47 @@
 "use client"
 
-import type React from "react"
-import { createContext, useState, useContext, useEffect } from "react"
-import { useColorScheme } from "react-native"
+import React, { createContext, useContext, useState, useEffect } from "react"
 import Colors from "../constants/Colors"
+import { useColorScheme } from "react-native"
 
-type Theme = "light" | "dark"
-
-interface ThemeContextType {
-  theme: Theme
-  colors: typeof Colors.light | typeof Colors.dark
-  toggleTheme: () => void
+interface ThemeContextProps {
   isDark: boolean
+  colors: typeof Colors.light
+  toggleTheme: () => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const ThemeContext = createContext<ThemeContextProps>({
+  isDark: false,
+  colors: Colors.light,
+  toggleTheme: () => {},
+})
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const deviceTheme = useColorScheme() as Theme
-  const [theme, setTheme] = useState<Theme>(deviceTheme || "light")
+export const useTheme = () => useContext(ThemeContext)
 
-  // Update theme if device theme changes
+interface ThemeProviderProps {
+  children: React.ReactNode
+}
+
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  const colorScheme = useColorScheme()
+  const [isDark, setIsDark] = useState(colorScheme === "dark")
+
   useEffect(() => {
-    if (deviceTheme) {
-      setTheme(deviceTheme)
-    }
-  }, [deviceTheme])
+    setIsDark(colorScheme === "dark")
+  }, [colorScheme])
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"))
+    setIsDark((previousState) => !previousState)
   }
 
-  const colors = theme === "light" ? Colors.light : Colors.dark
-  const isDark = theme === "dark"
+  const colors = isDark ? Colors.dark : Colors.light
 
-  return <ThemeContext.Provider value={{ theme, colors, toggleTheme, isDark }}>{children}</ThemeContext.Provider>
-}
-
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext)
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider")
+  const value: ThemeContextProps = {
+    isDark,
+    colors,
+    toggleTheme,
   }
-  return context
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 

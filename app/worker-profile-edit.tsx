@@ -14,7 +14,9 @@ export default function WorkerProfileEditScreen() {
   const [phone, setPhone] = useState("+63 912 345 6789")
   const [email, setEmail] = useState("bob.worker@example.com")
   const [address, setAddress] = useState("123 Main St, Angeles City")
-  const [bio, setBio] = useState("Experienced mechanic specializing in engine repairs and diagnostics with over 10 years of experience. Available for emergency repairs and regular maintenance.")
+  const [bio, setBio] = useState(
+    "Experienced mechanic specializing in engine repairs and diagnostics with over 10 years of experience. Available for emergency repairs and regular maintenance.",
+  )
   const [rate, setRate] = useState("300")
 
   const handleSave = () => {
@@ -274,3 +276,4 @@ const styles = StyleSheet.create({
     minHeight: 120,
   },
 })
+

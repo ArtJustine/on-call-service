@@ -7,6 +7,7 @@ export interface LocationData {
   city?: string
   region?: string
   country?: string
+  formattedAddress?: string
 }
 
 // Get the current location of the user
@@ -28,10 +29,14 @@ export const getCurrentLocation = async (): Promise<LocationData | null> => {
     // Get the address information from coordinates
     const geocode = await reverseGeocode(location.coords.latitude, location.coords.longitude)
 
+    // Get a nicely formatted address for display
+    const formattedAddress = await getFormattedAddress(location.coords.latitude, location.coords.longitude)
+
     return {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
       ...geocode,
+      formattedAddress,
     }
   } catch (error) {
     console.error("Error getting location:", error)
@@ -103,5 +108,36 @@ export const filterWorkersByLocation = (
 
     return distance <= maxDistance
   })
+}
+
+// Add a new function to get a formatted address
+export const getFormattedAddress = async (latitude: number, longitude: number): Promise<string> => {
+  try {
+    const geocodeResult = await Location.reverseGeocodeAsync({
+      latitude,
+      longitude,
+    })
+
+    if (geocodeResult && geocodeResult.length > 0) {
+      const address = geocodeResult[0]
+
+      // Format the address based on available data
+      if (address.city) {
+        return address.city
+      } else if (address.region) {
+        return address.region
+      } else if (address.subregion) {
+        return address.subregion
+      } else if (address.district) {
+        return address.district
+      } else {
+        return "Unknown location"
+      }
+    }
+    return "Unknown location"
+  } catch (error) {
+    console.error("Error getting formatted address:", error)
+    return "Unknown location"
+  }
 }
 
