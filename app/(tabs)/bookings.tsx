@@ -33,7 +33,7 @@ export default function BookingsScreen() {
     "HVAC Technician",
     "Landscaper",
     "Appliance Repair",
-    "Locksmith"
+    "Locksmith",
   ]
 
   // Get user's current location on component mount
@@ -83,21 +83,21 @@ export default function BookingsScreen() {
   // Handle date input with auto-formatting
   const handleDateChange = (text: string) => {
     // Remove any non-numeric characters
-    const numericValue = text.replace(/[^0-9]/g, '');
-    
+    const numericValue = text.replace(/[^0-9]/g, "")
+
     // Format the date with slashes
-    let formattedDate = '';
-    
+    let formattedDate = ""
+
     if (numericValue.length <= 2) {
-      formattedDate = numericValue;
+      formattedDate = numericValue
     } else if (numericValue.length <= 4) {
-      formattedDate = `${numericValue.slice(0, 2)}/${numericValue.slice(2)}`;
+      formattedDate = `${numericValue.slice(0, 2)}/${numericValue.slice(2)}`
     } else {
-      formattedDate = `${numericValue.slice(0, 2)}/${numericValue.slice(2, 4)}/${numericValue.slice(4, 8)}`;
+      formattedDate = `${numericValue.slice(0, 2)}/${numericValue.slice(2, 4)}/${numericValue.slice(4, 8)}`
     }
-    
-    setJobDate(formattedDate);
-  };
+
+    setJobDate(formattedDate)
+  }
 
   const handleAddJobPost = () => {
     if (!selectedServiceType || !minBudget || !maxBudget || !jobDate || !jobDescription) {
@@ -105,9 +105,9 @@ export default function BookingsScreen() {
       alert("Please fill in all required fields")
       return
     }
-    
-    const newJobPostId = (jobPosts.length + 1).toString();
-    
+
+    const newJobPostId = (jobPosts.length + 1).toString()
+
     // Create job post object
     const newJobPost = {
       id: newJobPostId,
@@ -121,7 +121,7 @@ export default function BookingsScreen() {
       applicants: 0,
       location: userLocation || "Unknown Location",
     }
-    
+
     // Create a corresponding booking entry
     const newBooking = {
       id: newJobPostId,
@@ -135,14 +135,14 @@ export default function BookingsScreen() {
       duration: "TBD",
       notes: jobDescription,
     }
-    
+
     // Update both arrays
     setJobPosts([newJobPost, ...jobPosts])
-    
+
     // Add to bookings array if it's a state variable, otherwise we'd use the imported bookings array
     // For this example, we'll just simulate adding to bookings
     // In a real app, you would update your data source
-    
+
     // Reset form
     setSelectedServiceType("")
     setMinBudget("")
@@ -152,12 +152,12 @@ export default function BookingsScreen() {
     setIsUrgent(false)
     setJobDescription("")
     setShowPostJobModal(false)
-    
+
     // Switch to the bookings tab to show the new booking
     setActiveTab("bookings")
-    
+
     // Alert to simulate notification to workers in the area
-    alert(`Your job has been posted! Workers in ${userLocation || "your area"} will be notified.`);
+    alert(`Your job has been posted! Workers in ${userLocation || "your area"} will be notified.`)
   }
 
   const handleViewApplicants = (postId: string) => {
@@ -335,8 +335,8 @@ export default function BookingsScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView 
-              style={styles.formContainer} 
+            <ScrollView
+              style={styles.formContainer}
               contentContainerStyle={{ paddingBottom: 30 }}
               showsVerticalScrollIndicator={true}
             >
@@ -347,26 +347,31 @@ export default function BookingsScreen() {
                   style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
                   onPress={() => setShowServiceTypeDropdown(!showServiceTypeDropdown)}
                 >
-                  <Text 
+                  <Text
                     style={[
-                      selectedServiceType ? { color: colors.text } : styles.placeholder, 
-                      { color: selectedServiceType ? colors.text : colors.subtext }
+                      selectedServiceType ? { color: colors.text } : styles.placeholder,
+                      { color: selectedServiceType ? colors.text : colors.subtext },
                     ]}
                   >
                     {selectedServiceType || "Select Service Type"}
                   </Text>
                   <ChevronDown width={20} height={20} stroke={colors.subtext} />
                 </TouchableOpacity>
-                
+
                 {showServiceTypeDropdown && (
-                  <View style={[styles.dropdownList, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <View
+                    style={[styles.dropdownList, { backgroundColor: colors.background, borderColor: colors.border }]}
+                  >
                     <ScrollView style={{ maxHeight: 160 }} nestedScrollEnabled={true}>
                       {serviceTypes.map((type, index) => (
                         <TouchableOpacity
                           key={index}
                           style={[
                             styles.dropdownItem,
-                            index < serviceTypes.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                            index < serviceTypes.length - 1 && {
+                              borderBottomWidth: 1,
+                              borderBottomColor: colors.border,
+                            },
                           ]}
                           onPress={() => {
                             setSelectedServiceType(type)
@@ -469,9 +474,9 @@ export default function BookingsScreen() {
                     <AlertTriangle width={20} height={20} stroke={colors.error} style={styles.inputIcon} />
                     <Text style={[styles.label, { color: colors.text }]}>Mark as Urgent</Text>
                   </View>
-                  <Switch 
-                    trackColor={{ false: colors.lightGray, true: colors.error + "70" }} 
-                    thumbColor={"#f4f3f4"} 
+                  <Switch
+                    trackColor={{ false: colors.lightGray, true: colors.error + "70" }}
+                    thumbColor={"#f4f3f4"}
                     value={isUrgent}
                     onValueChange={setIsUrgent}
                   />
@@ -872,5 +877,6 @@ const styles = StyleSheet.create({
   locationText: {
     flex: 1,
     fontSize: 16,
-  }
+  },
 })
+

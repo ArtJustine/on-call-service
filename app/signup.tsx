@@ -1,275 +1,170 @@
 "use client"
-import { useState } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ScrollView,
-} from "react-native"
+
+import React, { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { ArrowLeft, User, Mail, Lock, Phone, Briefcase, MapPin, Calendar, Eye, EyeOff } from "react-native-feather"
 import { useRouter } from "expo-router"
+import { registerUser, type UserRole } from "../services/AuthService"
 import { useTheme } from "../context/ThemeContext"
-import { categories } from "../constants/Data"
+import { getCurrentLocation } from "../services/LocationService"
 
 export default function SignupScreen() {
   const router = useRouter()
   const { colors } = useTheme()
-  const [accountType, setAccountType] = useState<"client" | "worker">("client")
-  const [showPassword, setShowPassword] = useState(false)
 
-  // Form fields
-  const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
-  const [address, setAddress] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [displayName, setDisplayName] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [role, setRole] = useState<UserRole>("client")
+  const [location, setLocation] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Worker-specific fields
-  const [profession, setProfession] = useState("")
-  const [experience, setExperience] = useState("")
-  const [showProfessionDropdown, setShowProfessionDropdown] = useState(false)
+  // Get user's location on component mount
+  React.useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const locationData = await getCurrentLocation()
+        if (locationData && locationData.city) {
+          setLocation(locationData.city)
+        }
+      } catch (error) {
+        console.error("Error fetching location:", error)
+      }
+    }
 
-  const handleSignup = () => {
-    // Basic validation
-    if (!fullName || !email || !phone || !password) {
+    fetchLocation()
+  }, [])
+
+  const handleSignup = async () => {
+    // Validate inputs
+    if (!email || !password || !confirmPassword || !displayName) {
       Alert.alert("Error", "Please fill in all required fields")
       return
     }
 
-    if (accountType === "worker" && !profession) {
-      Alert.alert("Error", "Please select your profession")
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match")
       return
     }
 
-    // In a real app, you would send this data to your backend
-    Alert.alert("Account Created", `Your ${accountType} account has been created successfully!`, [
-      {
-        text: "Continue",
-        onPress: () => {
-          // Navigate to login screen
-          router.push("/login")
-        },
-      },
-    ])
-  }
+    setIsLoading(true)
 
-  const selectProfession = (profession: string) => {
-    setProfession(profession)
-    setShowProfessionDropdown(false)
+    try {
+      await registerUser(email, password, displayName, role, phoneNumber, location)
+      Alert.alert("Success", "Your account has been created successfully!", [
+        { text: "OK", onPress: () => router.push("/login") },
+      ])
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to create account")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft width={24} height={24} stroke={colors.text} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
+
+      <View style={styles.form}>
+        <View style={styles.roleSelector}>
+          <TouchableOpacity
+            style={[
+              styles.roleButton,
+              role === "client" && { backgroundColor: colors.primary },
+              { borderColor: colors.primary },
+            ]}
+            onPress={() => setRole("client")}
+          >
+            <Text style={[styles.roleButtonText, { color: role === "client" ? colors.background : colors.primary }]}>
+              Client
+            </Text>
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>Sign Up</Text>
-          <View style={{ width: 24 }} />
+
+          <TouchableOpacity
+            style={[
+              styles.roleButton,
+              role === "worker" && { backgroundColor: colors.primary },
+              { borderColor: colors.primary },
+            ]}
+            onPress={() => setRole("worker")}
+          >
+            <Text style={[styles.roleButtonText, { color: role === "worker" ? colors.background : colors.primary }]}>
+              Service Provider
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.welcomeSection}>
-            <Text style={[styles.welcomeText, { color: colors.text }]}>Create Account</Text>
-            <Text style={[styles.welcomeSubtext, { color: colors.subtext }]}>
-              Join our community and start using our services
-            </Text>
-          </View>
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          placeholder="Full Name"
+          placeholderTextColor={colors.subtext}
+          value={displayName}
+          onChangeText={setDisplayName}
+        />
 
-          <View style={styles.accountTypeSelector}>
-            <TouchableOpacity
-              style={[
-                styles.accountTypeButton,
-                { borderColor: colors.border },
-                accountType === "client" && { backgroundColor: colors.primary, borderColor: colors.primary },
-              ]}
-              onPress={() => setAccountType("client")}
-            >
-              <Text
-                style={[styles.accountTypeText, { color: accountType === "client" ? colors.background : colors.text }]}
-              >
-                Client
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.accountTypeButton,
-                { borderColor: colors.border },
-                accountType === "worker" && { backgroundColor: colors.primary, borderColor: colors.primary },
-              ]}
-              onPress={() => setAccountType("worker")}
-            >
-              <Text
-                style={[styles.accountTypeText, { color: accountType === "worker" ? colors.background : colors.text }]}
-              >
-                Service Provider
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          placeholder="Email"
+          placeholderTextColor={colors.subtext}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
-          <View style={styles.formSection}>
-            {/* Full Name */}
-            <View style={styles.inputGroup}>
-              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}>
-                <User width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Full Name"
-                  placeholderTextColor={colors.subtext}
-                  value={fullName}
-                  onChangeText={setFullName}
-                />
-              </View>
-            </View>
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          placeholder="Phone Number"
+          placeholderTextColor={colors.subtext}
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          keyboardType="phone-pad"
+        />
 
-            {/* Email */}
-            <View style={styles.inputGroup}>
-              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}>
-                <Mail width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Email"
-                  placeholderTextColor={colors.subtext}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          placeholder="Password"
+          placeholderTextColor={colors.subtext}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
 
-            {/* Phone */}
-            <View style={styles.inputGroup}>
-              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}>
-                <Phone width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Phone Number"
-                  placeholderTextColor={colors.subtext}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                />
-              </View>
-            </View>
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+          placeholder="Confirm Password"
+          placeholderTextColor={colors.subtext}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
 
-            {/* Password */}
-            <View style={styles.inputGroup}>
-              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}>
-                <Lock width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Password"
-                  placeholderTextColor={colors.subtext}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  {showPassword ? (
-                    <EyeOff width={20} height={20} stroke={colors.subtext} />
-                  ) : (
-                    <Eye width={20} height={20} stroke={colors.subtext} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
+        <View style={styles.locationContainer}>
+          <Text style={[styles.locationLabel, { color: colors.subtext }]}>Your Location:</Text>
+          <Text style={[styles.locationValue, { color: colors.text }]}>{location || "Detecting location..."}</Text>
+        </View>
 
-            {/* Address */}
-            <View style={styles.inputGroup}>
-              <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}>
-                <MapPin width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Address"
-                  placeholderTextColor={colors.subtext}
-                  value={address}
-                  onChangeText={setAddress}
-                />
-              </View>
-            </View>
-
-            {/* Worker-specific fields */}
-            {accountType === "worker" && (
-              <>
-                {/* Profession */}
-                <View style={styles.inputGroup}>
-                  <View
-                    style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
-                  >
-                    <Briefcase width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                    <TouchableOpacity
-                      style={styles.dropdownButton}
-                      onPress={() => setShowProfessionDropdown(!showProfessionDropdown)}
-                    >
-                      <Text style={[styles.dropdownButtonText, { color: profession ? colors.text : colors.subtext }]}>
-                        {profession || "Select Profession"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {showProfessionDropdown && (
-                    <View
-                      style={[styles.dropdownMenu, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    >
-                      <ScrollView style={styles.dropdownScroll} nestedScrollEnabled={true}>
-                        {categories.map((category) => (
-                          <TouchableOpacity
-                            key={category.id}
-                            style={[styles.dropdownItem, { borderBottomColor: colors.border }]}
-                            onPress={() => selectProfession(category.name)}
-                          >
-                            <Text style={[styles.dropdownItemText, { color: colors.text }]}>{category.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-                </View>
-
-                {/* Experience */}
-                <View style={styles.inputGroup}>
-                  <View
-                    style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
-                  >
-                    <Calendar width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                    <TextInput
-                      style={[styles.input, { color: colors.text }]}
-                      placeholder="Years of Experience"
-                      placeholderTextColor={colors.subtext}
-                      value={experience}
-                      onChangeText={setExperience}
-                      keyboardType="number-pad"
-                    />
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
-
-          <TouchableOpacity style={[styles.signupButton, { backgroundColor: colors.primary }]} onPress={handleSignup}>
+        <TouchableOpacity
+          style={[styles.signupButton, { backgroundColor: colors.primary }, isLoading && { opacity: 0.7 }]}
+          onPress={handleSignup}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={colors.background} />
+          ) : (
             <Text style={[styles.signupButtonText, { color: colors.background }]}>Create Account</Text>
-          </TouchableOpacity>
+          )}
+        </TouchableOpacity>
 
-          <View style={styles.loginContainer}>
-            <Text style={[styles.loginText, { color: colors.subtext }]}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.push("/login")}>
-              <Text style={[styles.loginLink, { color: colors.primary }]}>Login</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <View style={styles.loginContainer}>
+          <Text style={[styles.loginText, { color: colors.subtext }]}>Already have an account?</Text>
+          <TouchableOpacity onPress={() => router.push("/login")}>
+            <Text style={[styles.loginLink, { color: colors.primary }]}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   )
 }
@@ -277,109 +172,56 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
+    padding: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-  },
-  welcomeSection: {
-    marginBottom: 24,
-  },
-  welcomeText: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 30,
+    textAlign: "center",
   },
-  welcomeSubtext: {
-    fontSize: 16,
+  form: {
+    width: "100%",
   },
-  accountTypeSelector: {
+  roleSelector: {
     flexDirection: "row",
-    marginBottom: 24,
-    gap: 12,
+    marginBottom: 20,
+    gap: 10,
   },
-  accountTypeButton: {
+  roleButton: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 8,
     paddingVertical: 12,
-    alignItems: "center",
-  },
-  accountTypeText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  formSection: {
-    marginBottom: 24,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
-  inputIcon: {
-    marginRight: 12,
+  roleButtonText: {
+    fontWeight: "600",
   },
   input: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  eyeIcon: {
-    padding: 4,
-  },
-  dropdownButton: {
-    flex: 1,
-    paddingVertical: 12,
-  },
-  dropdownButtonText: {
-    fontSize: 16,
-  },
-  dropdownMenu: {
-    position: "absolute",
-    top: 50,
-    left: 0,
-    right: 0,
     borderWidth: 1,
     borderRadius: 8,
-    maxHeight: 200,
-    zIndex: 1000,
-  },
-  dropdownScroll: {
-    maxHeight: 200,
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-  },
-  dropdownItemText: {
+    padding: 15,
+    marginBottom: 15,
     fontSize: 16,
   },
+  locationContainer: {
+    marginBottom: 20,
+  },
+  locationLabel: {
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  locationValue: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
   signupButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 8,
+    padding: 15,
     alignItems: "center",
-    marginBottom: 24,
+    marginTop: 10,
   },
   signupButtonText: {
     fontSize: 16,
@@ -388,7 +230,8 @@ const styles = StyleSheet.create({
   loginContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 32,
+    marginTop: 20,
+    gap: 5,
   },
   loginText: {
     fontSize: 14,

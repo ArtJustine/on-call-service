@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect } from "react"
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import Colors from "../constants/Colors"
 import { useColorScheme } from "react-native"
 
