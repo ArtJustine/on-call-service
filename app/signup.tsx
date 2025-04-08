@@ -1,25 +1,49 @@
 "use client"
 
 import React, { useState } from "react"
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useRouter } from "expo-router"
 import { registerUser, type UserRole } from "../services/AuthService"
 import { useTheme } from "../context/ThemeContext"
 import { getCurrentLocation } from "../services/LocationService"
+import { Ionicons } from "@expo/vector-icons"
 
 export default function SignupScreen() {
   const router = useRouter()
   const { colors } = useTheme()
 
+  // Form state
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [displayName, setDisplayName] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [role, setRole] = useState<UserRole>("client")
   const [location, setLocation] = useState("")
+  const [profession, setProfession] = useState("")
+  const [experience, setExperience] = useState("")
+
+  // UI state
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showProfessionOptions, setShowProfessionOptions] = useState(false)
+  const [showExperienceOptions, setShowExperienceOptions] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+
+  // Profession options
+  const professionOptions = ["Plumber", "Electrician", "Carpenter", "Mechanic", "Painter", "Other"]
+
+  // Experience options
+  const experienceOptions = [
+    "Entry Level (0-2 years)",
+    "Intermediate (3-5 years)",
+    "Experienced (6-10 years)",
+    "Expert (10+ years)",
+  ]
 
   // Get user's location on component mount
   React.useEffect(() => {
@@ -37,27 +61,95 @@ export default function SignupScreen() {
     fetchLocation()
   }, [])
 
-  const handleSignup = async () => {
-    // Validate inputs
-    if (!email || !password || !confirmPassword || !displayName) {
-      Alert.alert("Error", "Please fill in all required fields")
-      return
+  // Validate form
+  const validateForm = () => {
+    // Reset error state
+    setError(null)
+
+    // Check required fields
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      setError("Please fill in all required fields")
+      return false
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match")
-      return
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address")
+      return false
     }
+
+    // Check password length
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long")
+      return false
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return false
+    }
+
+    // Check terms acceptance
+    if (!termsAccepted) {
+      setError("You must agree to the terms and conditions")
+      return false
+    }
+
+    // If worker role, check profession
+    if (role === "worker" && !profession) {
+      setError("Please select your profession")
+      return false
+    }
+
+    // If worker role, check experience
+    if (role === "worker" && !experience) {
+      setError("Please select your experience level")
+      return false
+    }
+
+    return true
+  }
+
+  const handleSignup = async () => {
+    // Validate form
+    if (!validateForm()) return
 
     setIsLoading(true)
 
     try {
-      await registerUser(email, password, displayName, role, phoneNumber, location)
+      console.log("Starting registration process...")
+
+      // Register user with all fields
+      await registerUser(email, password, firstName, lastName, role, phoneNumber, location, profession, experience)
+
+      console.log("Registration successful")
+
       Alert.alert("Success", "Your account has been created successfully!", [
         { text: "OK", onPress: () => router.push("/login") },
       ])
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to create account")
+      console.error("Registration error:", error)
+
+      let errorMessage = "Failed to create account"
+
+      // Extract Firebase error message
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already in use. Please try another email or login."
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Please enter a valid email address."
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password is too weak. Please use a stronger password."
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Network error. Please check your internet connection and try again."
+      } else if (error.code === "auth/configuration-not-found") {
+        errorMessage = "Authentication service is not properly configured. Please contact support."
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -65,106 +157,233 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={[styles.title, { color: colors.text }]}>Create Account</Text>
 
-      <View style={styles.form}>
-        <View style={styles.roleSelector}>
-          <TouchableOpacity
-            style={[
-              styles.roleButton,
-              role === "client" && { backgroundColor: colors.primary },
-              { borderColor: colors.primary },
-            ]}
-            onPress={() => setRole("client")}
-          >
-            <Text style={[styles.roleButtonText, { color: role === "client" ? colors.background : colors.primary }]}>
-              Client
-            </Text>
-          </TouchableOpacity>
+        {error && (
+          <View style={[styles.errorContainer, { backgroundColor: colors.error + "15" }]}>
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
 
-          <TouchableOpacity
-            style={[
-              styles.roleButton,
-              role === "worker" && { backgroundColor: colors.primary },
-              { borderColor: colors.primary },
-            ]}
-            onPress={() => setRole("worker")}
-          >
-            <Text style={[styles.roleButtonText, { color: role === "worker" ? colors.background : colors.primary }]}>
-              Service Provider
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <View style={styles.form}>
+          <View style={styles.roleSelector}>
+            <TouchableOpacity
+              style={[
+                styles.roleButton,
+                role === "client" && { backgroundColor: colors.primary },
+                { borderColor: colors.primary },
+              ]}
+              onPress={() => setRole("client")}
+            >
+              <Text style={[styles.roleButtonText, { color: role === "client" ? colors.background : colors.primary }]}>
+                Client
+              </Text>
+            </TouchableOpacity>
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Full Name"
-          placeholderTextColor={colors.subtext}
-          value={displayName}
-          onChangeText={setDisplayName}
-        />
+            <TouchableOpacity
+              style={[
+                styles.roleButton,
+                role === "worker" && { backgroundColor: colors.primary },
+                { borderColor: colors.primary },
+              ]}
+              onPress={() => setRole("worker")}
+            >
+              <Text style={[styles.roleButtonText, { color: role === "worker" ? colors.background : colors.primary }]}>
+                Service Provider
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Email"
-          placeholderTextColor={colors.subtext}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <View style={styles.nameContainer}>
+            <View style={styles.nameField}>
+              <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                placeholder="John"
+                placeholderTextColor={colors.subtext}
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+            </View>
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Phone Number"
-          placeholderTextColor={colors.subtext}
-          value={phoneNumber}
-          onChangeText={setPhoneNumber}
-          keyboardType="phone-pad"
-        />
+            <View style={styles.nameField}>
+              <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                placeholder="Doe"
+                placeholderTextColor={colors.subtext}
+                value={lastName}
+                onChangeText={setLastName}
+              />
+            </View>
+          </View>
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Password"
-          placeholderTextColor={colors.subtext}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+          <TextInput
+            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            placeholder="john.doe@example.com"
+            placeholderTextColor={colors.subtext}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
-        <TextInput
-          style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Confirm Password"
-          placeholderTextColor={colors.subtext}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
+          <Text style={[styles.label, { color: colors.text }]}>Phone Number</Text>
+          <TextInput
+            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            placeholder="(123) 456-7890"
+            placeholderTextColor={colors.subtext}
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            keyboardType="phone-pad"
+          />
 
-        <View style={styles.locationContainer}>
-          <Text style={[styles.locationLabel, { color: colors.subtext }]}>Your Location:</Text>
-          <Text style={[styles.locationValue, { color: colors.text }]}>{location || "Detecting location..."}</Text>
-        </View>
+          {role === "worker" && (
+            <>
+              <Text style={[styles.label, { color: colors.text }]}>Profession</Text>
+              <TouchableOpacity
+                style={[styles.selectInput, { borderColor: colors.border }]}
+                onPress={() => setShowProfessionOptions(!showProfessionOptions)}
+              >
+                <Text style={{ color: profession ? colors.text : colors.subtext }}>
+                  {profession || "Select your profession"}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.subtext} />
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.signupButton, { backgroundColor: colors.primary }, isLoading && { opacity: 0.7 }]}
-          onPress={handleSignup}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color={colors.background} />
-          ) : (
-            <Text style={[styles.signupButtonText, { color: colors.background }]}>Create Account</Text>
+              {showProfessionOptions && (
+                <View style={[styles.optionsContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                  {professionOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={styles.optionItem}
+                      onPress={() => {
+                        setProfession(option)
+                        setShowProfessionOptions(false)
+                      }}
+                    >
+                      <Text style={{ color: colors.text }}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <Text style={[styles.label, { color: colors.text, marginTop: 15 }]}>Experience Level</Text>
+              <TouchableOpacity
+                style={[styles.selectInput, { borderColor: colors.border }]}
+                onPress={() => setShowExperienceOptions(!showExperienceOptions)}
+              >
+                <Text style={{ color: experience ? colors.text : colors.subtext }}>
+                  {experience || "Select your experience level"}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.subtext} />
+              </TouchableOpacity>
+
+              {showExperienceOptions && (
+                <View style={[styles.optionsContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                  {experienceOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      style={styles.optionItem}
+                      onPress={() => {
+                        setExperience(option)
+                        setShowExperienceOptions(false)
+                      }}
+                    >
+                      <Text style={{ color: colors.text }}>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </>
           )}
-        </TouchableOpacity>
 
-        <View style={styles.loginContainer}>
-          <Text style={[styles.loginText, { color: colors.subtext }]}>Already have an account?</Text>
-          <TouchableOpacity onPress={() => router.push("/login")}>
-            <Text style={[styles.loginLink, { color: colors.primary }]}>Login</Text>
+          <Text style={[styles.label, { color: colors.text, marginTop: 15 }]}>Password</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={[styles.passwordInput, { borderColor: colors.border, color: colors.text }]}
+              placeholder="••••••••"
+              placeholderTextColor={colors.subtext}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? "eye-off" : "eye"} size={24} color={colors.subtext} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.passwordHint, { color: colors.subtext }]}>
+            Password must be at least 8 characters long
+          </Text>
+
+          <Text style={[styles.label, { color: colors.text, marginTop: 10 }]}>Confirm Password</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={[styles.passwordInput, { borderColor: colors.border, color: colors.text }]}
+              placeholder="••••••••"
+              placeholderTextColor={colors.subtext}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+            />
+            <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+              <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={24} color={colors.subtext} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.termsContainer}>
+            <TouchableOpacity
+              style={[
+                styles.checkbox,
+                { borderColor: colors.primary },
+                termsAccepted && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setTermsAccepted(!termsAccepted)}
+            >
+              {termsAccepted && <Ionicons name="checkmark" size={16} color={colors.background} />}
+            </TouchableOpacity>
+            <Text style={[styles.termsText, { color: colors.text }]}>
+              I agree to the{" "}
+              <Text
+                style={[styles.termsLink, { color: colors.primary }]}
+                onPress={() => Alert.alert("Terms", "Terms and conditions will be displayed here.")}
+              >
+                terms and conditions
+              </Text>{" "}
+              and{" "}
+              <Text
+                style={[styles.termsLink, { color: colors.primary }]}
+                onPress={() => Alert.alert("Privacy", "Privacy policy will be displayed here.")}
+              >
+                privacy policy
+              </Text>
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.signupButton, { backgroundColor: colors.primary }, isLoading && { opacity: 0.7 }]}
+            onPress={handleSignup}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <Text style={[styles.signupButtonText, { color: colors.background }]}>
+                Create {role === "worker" ? "Professional" : ""} Account
+              </Text>
+            )}
           </TouchableOpacity>
+
+          <View style={styles.loginContainer}>
+            <Text style={[styles.loginText, { color: colors.subtext }]}>Already have an account?</Text>
+            <TouchableOpacity onPress={() => router.push("/login")}>
+              <Text style={[styles.loginLink, { color: colors.primary }]}>Login</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -172,13 +391,25 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 30,
+    marginBottom: 20,
     textAlign: "center",
+  },
+  errorContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   form: {
     width: "100%",
@@ -199,29 +430,92 @@ const styles = StyleSheet.create({
   roleButtonText: {
     fontWeight: "600",
   },
+  nameContainer: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 15,
+  },
+  nameField: {
+    flex: 1,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 6,
+  },
   input: {
     borderWidth: 1,
     borderRadius: 8,
     padding: 15,
-    marginBottom: 15,
     fontSize: 16,
   },
-  locationContainer: {
-    marginBottom: 20,
+  selectInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  locationLabel: {
-    fontSize: 14,
+  optionsContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 5,
+    maxHeight: 200,
+  },
+  optionItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  passwordContainer: {
+    position: "relative",
     marginBottom: 5,
   },
-  locationValue: {
+  passwordInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
     fontSize: 16,
-    fontWeight: "500",
+    paddingRight: 50,
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 15,
+    top: 15,
+  },
+  passwordHint: {
+    fontSize: 12,
+    marginBottom: 15,
+  },
+  termsContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginVertical: 20,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: 4,
+    marginRight: 10,
+    marginTop: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  termsLink: {
+    fontWeight: "600",
   },
   signupButton: {
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
-    marginTop: 10,
   },
   signupButtonText: {
     fontSize: 16,

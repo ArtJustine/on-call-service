@@ -10,8 +10,8 @@ export interface LocationData {
   formattedAddress?: string
 }
 
-// Get the current location of the user
-export const getCurrentLocation = async (): Promise<LocationData | null> => {
+// Get the current location of the user with timeout
+export const getCurrentLocation = async (timeoutMs = 15000): Promise<LocationData | null> => {
   try {
     // Request permission to access location
     const { status } = await Location.requestForegroundPermissionsAsync()
@@ -21,10 +21,23 @@ export const getCurrentLocation = async (): Promise<LocationData | null> => {
       return null
     }
 
-    // Get the current position
-    const location = await Location.getCurrentPositionAsync({
+    // Create a promise that rejects after the timeout
+    const timeoutPromise = new Promise<null>((_, reject) => {
+      setTimeout(() => reject(new Error("Location request timed out")), timeoutMs)
+    })
+
+    // Get the current position with timeout
+    const locationPromise = Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     })
+
+    // Race the location request against the timeout
+    const location = await Promise.race([locationPromise, timeoutPromise])
+
+    if (!location) {
+      console.error("Location is null")
+      return null
+    }
 
     // Get the address information from coordinates
     const geocode = await reverseGeocode(location.coords.latitude, location.coords.longitude)
@@ -40,20 +53,30 @@ export const getCurrentLocation = async (): Promise<LocationData | null> => {
     }
   } catch (error) {
     console.error("Error getting location:", error)
+    // Return a fallback location or null
     return null
   }
 }
 
-// Reverse geocode coordinates to get address information
+// Reverse geocode coordinates to get address information with timeout
 export const reverseGeocode = async (
   latitude: number,
   longitude: number,
+  timeoutMs = 5000,
 ): Promise<{ city?: string; region?: string; country?: string }> => {
   try {
-    const geocodeResult = await Location.reverseGeocodeAsync({
+    // Create a promise that rejects after the timeout
+    const timeoutPromise = new Promise<[]>((_, reject) => {
+      setTimeout(() => reject(new Error("Geocoding request timed out")), timeoutMs)
+    })
+
+    // Get the geocode with timeout
+    const geocodePromise = Location.reverseGeocodeAsync({
       latitude,
       longitude,
     })
+
+    const geocodeResult = await Promise.race([geocodePromise, timeoutPromise])
 
     if (geocodeResult && geocodeResult.length > 0) {
       const address = geocodeResult[0]
@@ -110,13 +133,21 @@ export const filterWorkersByLocation = (
   })
 }
 
-// Add a new function to get a formatted address
-export const getFormattedAddress = async (latitude: number, longitude: number): Promise<string> => {
+// Get a formatted address with timeout
+export const getFormattedAddress = async (latitude: number, longitude: number, timeoutMs = 5000): Promise<string> => {
   try {
-    const geocodeResult = await Location.reverseGeocodeAsync({
+    // Create a promise that rejects after the timeout
+    const timeoutPromise = new Promise<[]>((_, reject) => {
+      setTimeout(() => reject(new Error("Formatted address request timed out")), timeoutMs)
+    })
+
+    // Get the geocode with timeout
+    const geocodePromise = Location.reverseGeocodeAsync({
       latitude,
       longitude,
     })
+
+    const geocodeResult = await Promise.race([geocodePromise, timeoutPromise])
 
     if (geocodeResult && geocodeResult.length > 0) {
       const address = geocodeResult[0]
@@ -141,3 +172,27 @@ export const getFormattedAddress = async (latitude: number, longitude: number): 
   }
 }
 
+// Get last known location as a fallback
+export const getLastKnownLocation = async (): Promise<LocationData | null> => {
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync()
+
+    if (status !== "granted") {
+      return null
+    }
+
+    const location = await Location.getLastKnownPositionAsync()
+
+    if (!location) {
+      return null
+    }
+
+    return {
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    }
+  } catch (error) {
+    console.error("Error getting last known location:", error)
+    return null
+  }
+}

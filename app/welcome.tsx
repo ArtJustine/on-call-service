@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           {/* Keeping the logo on the welcome screen */}
-          <AppLogo size="large" showText={true} />
+          <AppLogo size="large" showText={false} />
           <Text style={[styles.tagline, { color: colors.subtext }]}>Expert help, just a tap away</Text>
         </View>
 

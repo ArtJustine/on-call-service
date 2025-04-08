@@ -1,203 +1,179 @@
 "use client"
-import { useState } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ScrollView,
-} from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from "react-native-feather"
-import { useRouter } from "expo-router"
-import { useTheme } from "../context/ThemeContext"
 
-// Dummy accounts
-const dummyAccounts = {
-  clients: [
-    { email: "client@example.com", password: "password123", name: "John Client" },
-    { email: "user@example.com", password: "password123", name: "Jane User" },
-  ],
-  workers: [
-    { email: "worker@example.com", password: "password123", name: "Bob Worker", profession: "Mechanic" },
-    { email: "expert@example.com", password: "password123", name: "Alice Expert", profession: "Electrician" },
-  ],
-}
+import { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
+import { signInUser } from "../services/AuthService"
+import { useTheme } from "../context/ThemeContext"
+import { Ionicons } from "@expo/vector-icons"
+import { getCurrentLocation, getLastKnownLocation } from "../services/LocationService"
 
 export default function LoginScreen() {
   const router = useRouter()
   const { colors } = useTheme()
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [accountType, setAccountType] = useState<"client" | "worker">("client")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [locationStatus, setLocationStatus] = useState<string | null>(null)
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    // Reset error state
+    setError(null)
+
+    // Validate inputs
     if (!email || !password) {
-      Alert.alert("Error", "Please enter both email and password")
+      setError("Please enter both email and password")
       return
     }
 
-    // Check if the credentials match any dummy account
-    const accounts = accountType === "client" ? dummyAccounts.clients : dummyAccounts.workers
-    const account = accounts.find((acc) => acc.email === email && acc.password === password)
+    setIsLoading(true)
 
-    if (account) {
-      // In a real app, you would store the user session/token
-      Alert.alert("Success", `Welcome back, ${account.name}!`, [
-        {
-          text: "Continue",
-          onPress: () => {
-            // Navigate to the appropriate home screen based on account type
-            if (accountType === "client") {
-              router.push("/(tabs)/home")
-            } else {
-              // For now, we'll navigate to the same home screen
-              // In a real app, you would have a separate worker dashboard
-              router.push("/worker-dashboard")
-            }
-          },
-        },
-      ])
-    } else {
-      Alert.alert("Error", "Invalid email or password")
+    try {
+      console.log("Attempting to sign in...")
+      const userData = await signInUser(email, password)
+
+      if (!userData) {
+        setError("User data not found. Please try again or create a new account.")
+        setIsLoading(false)
+        return
+      }
+
+      console.log("Login successful, user role:", userData.role)
+
+      // Get location after successful login
+      setLocationStatus("Getting your location...")
+
+      // Try to get current location with a 10-second timeout
+      let location = null
+      try {
+        location = await getCurrentLocation(10000)
+      } catch (locationError) {
+        console.error("Error getting current location:", locationError)
+      }
+
+      // If current location fails, try to get last known location
+      if (!location) {
+        console.log("Current location failed, trying last known location")
+        try {
+          location = await getLastKnownLocation()
+        } catch (locationError) {
+          console.error("Error getting last known location:", locationError)
+        }
+      }
+
+      // Clear location status
+      setLocationStatus(null)
+
+      // Store location in user context or state management if needed
+      // For example: updateUserLocation(location)
+
+      // Navigate based on user role - proceed even if location fails
+      if (userData.role === "worker") {
+        router.replace("/worker-dashboard")
+      } else {
+        router.replace("/(tabs)/home")
+      }
+    } catch (error: any) {
+      console.error("Login error:", error)
+
+      let errorMessage = "Failed to sign in"
+
+      // Extract Firebase error message
+      if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+        errorMessage = "Invalid email or password"
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Please enter a valid email address"
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Too many failed login attempts. Please try again later"
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Network error. Please check your internet connection and try again"
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      setError(errorMessage)
+    } finally {
+      setIsLoading(false)
+      setLocationStatus(null)
     }
   }
 
+  const handleForgotPassword = () => {
+    router.push("/forgot-password")
+  }
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-      >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft width={24} height={24} stroke={colors.text} />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.content}>
+        <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
+        <Text style={[styles.subtitle, { color: colors.subtext }]}>Sign in to continue</Text>
+
+        {error && (
+          <View style={[styles.errorContainer, { backgroundColor: colors.error + "15" }]}>
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          </View>
+        )}
+
+        <View style={styles.form}>
+          <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+          <TextInput
+            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            placeholder="john.doe@example.com"
+            placeholderTextColor={colors.subtext}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Text style={[styles.label, { color: colors.text, marginTop: 15 }]}>Password</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={[styles.passwordInput, { borderColor: colors.border, color: colors.text }]}
+              placeholder="••••••••"
+              placeholderTextColor={colors.subtext}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? "eye-off" : "eye"} size={24} color={colors.subtext} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: colors.text }]}>Login</Text>
-            <View style={{ width: 24 }} />
           </View>
 
-          <View style={styles.content}>
-            <View style={styles.welcomeSection}>
-              <Text style={[styles.welcomeText, { color: colors.text }]}>Welcome Back!</Text>
-              <Text style={[styles.welcomeSubtext, { color: colors.subtext }]}>
-                Please sign in to continue using our services
-              </Text>
-            </View>
+          <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
+            <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
+          </TouchableOpacity>
 
-            <View style={styles.accountTypeSelector}>
-              <TouchableOpacity
-                style={[
-                  styles.accountTypeButton,
-                  { borderColor: colors.border },
-                  accountType === "client" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
-                onPress={() => setAccountType("client")}
-              >
-                <Text
-                  style={[
-                    styles.accountTypeText,
-                    { color: accountType === "client" ? colors.background : colors.text },
-                  ]}
-                >
-                  Clients
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.accountTypeButton,
-                  { borderColor: colors.border },
-                  accountType === "worker" && { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
-                onPress={() => setAccountType("worker")}
-              >
-                <Text
-                  style={[
-                    styles.accountTypeText,
-                    { color: accountType === "worker" ? colors.background : colors.text },
-                  ]}
-                >
-                  Professionals
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.formSection}>
-              <View style={styles.inputGroup}>
-                <View
-                  style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
-                >
-                  <Mail width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: colors.text }]}
-                    placeholder="Email"
-                    placeholderTextColor={colors.subtext}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
+          <TouchableOpacity
+            style={[styles.loginButton, { backgroundColor: colors.primary }, isLoading && { opacity: 0.7 }]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color={colors.background} />
+                {locationStatus && (
+                  <Text style={[styles.locationStatus, { color: colors.background }]}>{locationStatus}</Text>
+                )}
               </View>
+            ) : (
+              <Text style={[styles.loginButtonText, { color: colors.background }]}>Sign In</Text>
+            )}
+          </TouchableOpacity>
 
-              <View style={styles.inputGroup}>
-                <View
-                  style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.lightGray }]}
-                >
-                  <Lock width={20} height={20} stroke={colors.subtext} style={styles.inputIcon} />
-                  <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder="Password"
-                  placeholderTextColor={colors.subtext}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                    {showPassword ? (
-                      <EyeOff width={20} height={20} stroke={colors.subtext} />
-                    ) : (
-                      <Eye width={20} height={20} stroke={colors.subtext} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.forgotPasswordContainer}>
-                <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={[styles.loginButton, { backgroundColor: colors.primary }]} onPress={handleLogin}>
-              <Text style={[styles.loginButtonText, { color: colors.background }]}>Login</Text>
+          <View style={styles.signupContainer}>
+            <Text style={[styles.signupText, { color: colors.subtext }]}>Don't have an account?</Text>
+            <TouchableOpacity onPress={() => router.push("/signup")}>
+              <Text style={[styles.signupLink, { color: colors.primary }]}>Sign Up</Text>
             </TouchableOpacity>
-
-            <View style={styles.signupContainer}>
-              <Text style={[styles.signupText, { color: colors.subtext }]}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/signup")}>
-                <Text style={[styles.signupLink, { color: colors.primary }]}>Sign Up</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.demoAccountsContainer}>
-              <Text style={[styles.demoAccountsTitle, { color: colors.text }]}>Demo Accounts:</Text>
-              <Text style={[styles.demoAccountText, { color: colors.subtext }]}>
-                Client: client@example.com / password123
-              </Text>
-              <Text style={[styles.demoAccountText, { color: colors.subtext }]}>
-                Worker: worker@example.com / password123
-              </Text>
-            </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </View>
     </SafeAreaView>
   )
 }
@@ -206,96 +182,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 20,
+    justifyContent: "center",
   },
-  welcomeSection: {
-    marginBottom: 32,
-  },
-  welcomeText: {
+  title: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 8,
+    textAlign: "center",
   },
-  welcomeSubtext: {
+  subtitle: {
     fontSize: 16,
+    textAlign: "center",
+    marginBottom: 30,
   },
-  accountTypeSelector: {
-    flexDirection: "row",
-    marginBottom: 24,
-    gap: 12,
-  },
-  accountTypeButton: {
-    flex: 1,
-    borderWidth: 1,
+  errorContainer: {
+    padding: 12,
     borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
+    marginBottom: 20,
   },
-  accountTypeText: {
+  errorText: {
     fontSize: 14,
     fontWeight: "500",
   },
-  formSection: {
-    marginBottom: 24,
+  form: {
+    width: "100%",
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 12,
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 6,
   },
   input: {
-    flex: 1,
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
     fontSize: 16,
   },
-  eyeIcon: {
-    padding: 4,
+  passwordContainer: {
+    position: "relative",
   },
-  forgotPasswordContainer: {
+  passwordInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    paddingRight: 50,
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 15,
+    top: 15,
+  },
+  forgotPassword: {
     alignSelf: "flex-end",
-    marginTop: 8,
+    marginTop: 10,
+    marginBottom: 20,
   },
   forgotPasswordText: {
     fontSize: 14,
+    fontWeight: "500",
   },
   loginButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 8,
+    padding: 15,
     alignItems: "center",
-    marginBottom: 24,
   },
   loginButtonText: {
     fontSize: 16,
     fontWeight: "600",
   },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  locationStatus: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
   signupContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 32,
+    marginTop: 20,
+    gap: 5,
   },
   signupText: {
     fontSize: 14,
@@ -303,19 +275,5 @@ const styles = StyleSheet.create({
   signupLink: {
     fontSize: 14,
     fontWeight: "600",
-  },
-  demoAccountsContainer: {
-    padding: 16,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.05)",
-  },
-  demoAccountsTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  demoAccountText: {
-    fontSize: 12,
-    marginBottom: 4,
   },
 })

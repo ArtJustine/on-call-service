@@ -12,7 +12,7 @@ const EXPERTS_DATA: Expert[] = [
     verified: true,
     price: "P300/job",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "ASE certified mechanic with 12+ years of experience specializing in engine diagnostics and repair. Expert in both domestic and foreign vehicles with a focus on preventative maintenance.",
     rating: 4.8,
     image: null,
   },
@@ -23,7 +23,7 @@ const EXPERTS_DATA: Expert[] = [
     verified: true,
     price: "P350/job",
     description:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Licensed master electrician with expertise in residential and commercial wiring. Specializes in troubleshooting complex electrical issues and smart home installations.",
     rating: 4.5,
     image: null,
   },
